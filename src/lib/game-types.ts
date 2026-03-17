@@ -52,6 +52,7 @@ export type LiveTeam = TeamSeed & {
   rank: number;
   submissionOrder: number | null;
   scoreCard: ScoreCard;
+  tieBreakNote: string | null;
 };
 
 export type RoundControlState = {

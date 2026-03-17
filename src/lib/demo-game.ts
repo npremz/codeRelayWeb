@@ -284,16 +284,35 @@ export function buildLiveTeams(seeds: TeamSeed[], state: RelayState): LiveTeam[]
         scoreCard.speedBonus,
       progress,
       submissionOrder,
-      scoreCard
+      scoreCard,
+      tieBreakNote: null
     };
   });
 
   const rankedTeams = [...liveTeams].sort(compareTeams);
 
-  return rankedTeams.map((team, index) => ({
-    ...team,
-    rank: index + 1
-  }));
+  return rankedTeams.map((team, index, allTeams) => {
+    const previousTeam = allTeams[index - 1];
+    let tieBreakNote: string | null = null;
+
+    if (previousTeam && previousTeam.totalScore === team.totalScore) {
+      if (previousTeam.scoreCard.correction !== team.scoreCard.correction) {
+        tieBreakNote = "Departage sur correction";
+      } else if (previousTeam.scoreCard.edgeCases !== team.scoreCard.edgeCases) {
+        tieBreakNote = "Departage sur edge cases";
+      } else if (previousTeam.scoreCard.complexity !== team.scoreCard.complexity) {
+        tieBreakNote = "Departage sur complexite";
+      } else if (previousTeam.submissionOrder !== team.submissionOrder) {
+        tieBreakNote = "Departage sur ordre de soumission";
+      }
+    }
+
+    return {
+      ...team,
+      rank: index + 1,
+      tieBreakNote
+    };
+  });
 }
 
 export function formatClock(ms: number): string {
@@ -339,4 +358,10 @@ export function getRoundActionLabel(phase: RoundControlState["phase"]): string {
     default:
       return phase;
   }
+}
+
+export function formatTieBreakTuple(team: Pick<LiveTeam, "scoreCard" | "submissionOrder">): string {
+  const submissionLabel = team.submissionOrder ? `S${team.submissionOrder}` : "S-";
+
+  return `C${team.scoreCard.correction} · E${team.scoreCard.edgeCases} · X${team.scoreCard.complexity} · ${submissionLabel}`;
 }

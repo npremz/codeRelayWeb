@@ -32,6 +32,7 @@ Toutes les evolutions notables du projet `Code Relay` sont documentees ici.
 - Les ecrans `overview`, `admin`, `judge`, `register` et `tv` consomment maintenant le vrai timer de manche.
 - Le bonus rapidite est derive automatiquement de l'ordre reel de soumission.
 - Le fallback demo a ete retire des surfaces live pour privilegier le vrai etat du tournoi.
+- Le tie-break est maintenant visible dans les ecrans de classement, jury et TV.
 
 ### Verified
 - `npm run build`

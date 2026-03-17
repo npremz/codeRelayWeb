@@ -2,7 +2,7 @@
 
 import { AppFrame } from "@/components/app-frame";
 import { Panel } from "@/components/panel";
-import { buildLiveTeams, getRelayState, scoreLabels } from "@/lib/demo-game";
+import { buildLiveTeams, formatTieBreakTuple, getRelayState, scoreLabels } from "@/lib/demo-game";
 import { PublicTeam, ScoreCard, ScoreMetricKey, TeamScoreInput } from "@/lib/game-types";
 import { useLiveTeams } from "@/lib/use-live-teams";
 import { ChangeEvent, useEffect, useMemo, useState } from "react";
@@ -251,6 +251,14 @@ export function JudgeScreen({ staffRole }: JudgeScreenProps) {
                 <p className="mt-2 text-sm">
                   Departage: correction, puis edge cases, puis complexite, puis ordre de soumission.
                 </p>
+                <div className="mt-4 rounded-[1.1rem] border border-lime/20 bg-black/15 p-3 text-sm">
+                  Tie-break: {formatTieBreakTuple(liveTeamsMap.get(selectedTeam.id) ?? { scoreCard: selectedScore, submissionOrder: selectedTeam.submittedAt ? 0 : null })}
+                </div>
+                {liveTeamsMap.get(selectedTeam.id)?.tieBreakNote && (
+                  <div className="mt-3 rounded-[1.1rem] border border-signal/30 bg-signal/10 p-3 text-sm text-signal">
+                    {liveTeamsMap.get(selectedTeam.id)?.tieBreakNote}
+                  </div>
+                )}
                 <div className="mt-4 rounded-[1.1rem] border border-lime/20 bg-black/15 p-3 text-sm">
                   {selectedTeam.submittedAt
                     ? `Soumise le ${new Date(selectedTeam.submittedAt).toLocaleString("fr-BE")}`

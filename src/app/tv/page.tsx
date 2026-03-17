@@ -1,6 +1,6 @@
 "use client";
 
-import { buildLiveTeams, formatClock, getRelayState } from "@/lib/demo-game";
+import { buildLiveTeams, formatClock, formatTieBreakTuple, getRelayState } from "@/lib/demo-game";
 import { useLiveTeams } from "@/lib/use-live-teams";
 import { useEffect, useState } from "react";
 
@@ -89,6 +89,9 @@ export default function TvPage() {
                     <span className="rounded-full border border-signal/30 bg-signal/10 px-3 py-2 text-signal">
                       {team.submissionOrder ? `Soumise #${team.submissionOrder}` : "Score provisoire"}
                     </span>
+                    <span className="rounded-full border border-white/10 bg-black/20 px-3 py-2 text-fog">
+                      TB {formatTieBreakTuple(team)}
+                    </span>
                   </div>
                 </article>
               ))}
@@ -127,10 +130,18 @@ export default function TvPage() {
                   <div className="h-3 overflow-hidden rounded-full bg-white/10">
                     <div className="h-full rounded-full bg-signal" style={{ width: `${team.progress}%` }} />
                   </div>
-                  <span className="rounded-full border border-lime/30 bg-lime/10 px-3 py-2 text-xs uppercase tracking-[0.16em] text-lime">
-                    {team.activeMember ? `Au clavier: ${team.activeMember.name}` : "En attente"}
-                  </span>
+                  <div className="flex flex-wrap justify-end gap-3">
+                    <span className="rounded-full border border-lime/30 bg-lime/10 px-3 py-2 text-xs uppercase tracking-[0.16em] text-lime">
+                      {team.activeMember ? `Au clavier: ${team.activeMember.name}` : "En attente"}
+                    </span>
+                    <span className="rounded-full border border-white/10 bg-black/20 px-3 py-2 text-xs uppercase tracking-[0.16em] text-fog">
+                      TB {formatTieBreakTuple(team)}
+                    </span>
+                  </div>
                 </div>
+                {team.tieBreakNote && (
+                  <p className="mt-3 text-xs uppercase tracking-[0.16em] text-signal">{team.tieBreakNote}</p>
+                )}
               </article>
             ))}
           </div>
