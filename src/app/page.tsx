@@ -63,6 +63,7 @@ export default function HomePage() {
                 { href: "/register", label: "Participant Registration", copy: "Create a team in seconds and keep access through a secret manage link." },
                 { href: "/admin", label: "Organizer Board", copy: "Launch the round, watch stations and drive the timeline." },
                 { href: "/judge", label: "Judge Cockpit", copy: "Persist scores against correction, edge cases, complexity and readability." },
+                { href: "/results", label: "Public Results", copy: "Expose ranking, tie-break tuples and final ordering for teams and audience." },
                 { href: "/tv", label: "TV Wall", copy: "Large-screen view for timer, ranking and live activity." }
               ].map((item) => (
                 <Link

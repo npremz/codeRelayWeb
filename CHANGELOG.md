@@ -33,6 +33,7 @@ Toutes les evolutions notables du projet `Code Relay` sont documentees ici.
 - Le bonus rapidite est derive automatiquement de l'ordre reel de soumission.
 - Le fallback demo a ete retire des surfaces live pour privilegier le vrai etat du tournoi.
 - Le tie-break est maintenant visible dans les ecrans de classement, jury et TV.
+- Une page publique `/results` expose maintenant le classement et les departages de facon transparente.
 
 ### Verified
 - `npm run build`

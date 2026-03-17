@@ -8,6 +8,7 @@ MVP `Next.js + Prisma` pour piloter un tournoi Code Relay.
 - `/staff` acces staff par code court
 - `/admin` pilotage de manche
 - `/judge` evaluation des equipes
+- `/results` classement public et explication des tie-breaks
 - `/tv` affichage plein ecran
 
 ## Demarrage

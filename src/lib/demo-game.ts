@@ -365,3 +365,30 @@ export function formatTieBreakTuple(team: Pick<LiveTeam, "scoreCard" | "submissi
 
   return `C${team.scoreCard.correction} · E${team.scoreCard.edgeCases} · X${team.scoreCard.complexity} · ${submissionLabel}`;
 }
+
+export function getTieBreakReason(team: Pick<LiveTeam, "tieBreakNote">): string {
+  return team.tieBreakNote ?? "Aucun departage necessaire";
+}
+
+export function getTieBreakScenarios(teams: LiveTeam[]) {
+  const scenarios: Array<{
+    leadingTeam: LiveTeam;
+    trailingTeam: LiveTeam;
+    reason: string;
+  }> = [];
+
+  for (let index = 1; index < teams.length; index += 1) {
+    const currentTeam = teams[index];
+    const previousTeam = teams[index - 1];
+
+    if (currentTeam.totalScore === previousTeam.totalScore && currentTeam.tieBreakNote) {
+      scenarios.push({
+        leadingTeam: previousTeam,
+        trailingTeam: currentTeam,
+        reason: currentTeam.tieBreakNote
+      });
+    }
+  }
+
+  return scenarios;
+}
