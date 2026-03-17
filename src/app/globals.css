@@ -1,0 +1,139 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-obsidian: #111313;
+  --color-sand: #f3ebd8;
+  --color-signal: #ff7a24;
+  --color-lime: #caff4c;
+  --color-steel: #293032;
+  --color-fog: #b7b0a0;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background:
+    linear-gradient(135deg, rgba(255, 122, 36, 0.08), transparent 34%),
+    linear-gradient(315deg, rgba(202, 255, 76, 0.06), transparent 28%),
+    var(--color-obsidian);
+  color: var(--color-sand);
+  font-family: var(--font-body), monospace;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+::selection {
+  background: rgba(255, 122, 36, 0.35);
+}
+
+.panel {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02)),
+    rgba(0, 0, 0, 0.22);
+  border-radius: 2rem;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.04),
+    0 24px 60px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(12px);
+  padding: 1.5rem;
+}
+
+.panel-eyebrow {
+  margin: 0;
+  color: var(--color-signal);
+  font-size: 0.72rem;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+}
+
+.panel-title {
+  margin: 0.5rem 0 0;
+  font-family: var(--font-display), sans-serif;
+  font-size: clamp(2rem, 3vw, 3.4rem);
+  line-height: 0.95;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.signal-input {
+  width: 100%;
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--color-sand);
+  padding: 0.9rem 1rem;
+  font: inherit;
+}
+
+.signal-input:focus {
+  outline: 2px solid rgba(255, 122, 36, 0.45);
+  outline-offset: 2px;
+}
+
+.signal-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 122, 36, 0.5);
+  background: var(--color-signal);
+  color: var(--color-obsidian);
+  padding: 0.9rem 1.25rem;
+  font: inherit;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.signal-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0 0 1px rgba(255, 122, 36, 0.3), 0 16px 28px rgba(255, 122, 36, 0.25);
+}
+
+.ghost-button {
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--color-sand);
+  padding: 0.9rem 1.25rem;
+  font: inherit;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.stat-value {
+  font-family: var(--font-display), sans-serif;
+  font-size: clamp(3rem, 7vw, 7rem);
+  line-height: 0.9;
+  text-transform: uppercase;
+}
+
+.grain::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.14;
+  background-image:
+    radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.5) 0.5px, transparent 0.5px),
+    radial-gradient(circle at 80% 10%, rgba(255, 255, 255, 0.45) 0.7px, transparent 0.7px),
+    radial-gradient(circle at 10% 80%, rgba(255, 255, 255, 0.45) 0.5px, transparent 0.5px);
+  background-size: 17px 17px, 23px 23px, 19px 19px;
+}

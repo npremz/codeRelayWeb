@@ -1,0 +1,91 @@
+export type RelayPhase = "reflection" | "relay";
+
+export type TeamStatus = "registered" | "ready" | "coding" | "submitted" | "scored";
+
+export type TeamMember = {
+  id: string;
+  name: string;
+  relayOrder: number;
+};
+
+export type ScoreCard = {
+  correction: number;
+  edgeCases: number;
+  complexity: number;
+  readability: number;
+  speedBonus: number;
+  notes?: string;
+};
+
+export type ScoreMetricKey =
+  | "correction"
+  | "edgeCases"
+  | "complexity"
+  | "readability"
+  | "speedBonus";
+
+export type TeamSeed = {
+  id: string;
+  teamCode?: string;
+  name: string;
+  station: string;
+  members: TeamMember[];
+  status: TeamStatus;
+  submittedAfterSlice?: number;
+  submittedAt?: string | null;
+  score: Omit<ScoreCard, "speedBonus">;
+};
+
+export type PublicTeam = TeamSeed & {
+  teamCode: string;
+  createdAt: string;
+  updatedAt: string;
+  locked: boolean;
+};
+
+export type LiveTeam = TeamSeed & {
+  activeMember: TeamMember | null;
+  totalScore: number;
+  progress: number;
+  rank: number;
+  submissionOrder: number | null;
+  scoreCard: ScoreCard;
+};
+
+export type RelayState = {
+  phase: RelayPhase;
+  elapsedMs: number;
+  remainingMs: number;
+  totalMs: number;
+  currentSlice: number;
+  activeRelayOrder: number | null;
+  phaseLabel: string;
+};
+
+export type TeamCreateInput = {
+  name: string;
+  members: string[];
+};
+
+export type TeamUpdateInput = TeamCreateInput & {
+  token: string;
+};
+
+export type TeamScoreInput = {
+  correction: number;
+  edgeCases: number;
+  complexity: number;
+  readability: number;
+  notes?: string;
+};
+
+export type TeamCreateResponse = {
+  team: PublicTeam;
+  editToken: string;
+  managePath: string;
+};
+
+export type LiveTeamsResponse = {
+  teams: PublicTeam[];
+  usingDemoData: boolean;
+};

@@ -1,0 +1,118 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  JUDGE
+  PARTICIPANT
+}
+
+enum RoundPhase {
+  DRAFT
+  REFLECTION
+  RELAY
+  REVIEW
+  COMPLETE
+}
+
+enum TeamStatus {
+  REGISTERED
+  READY
+  CODING
+  SUBMITTED
+  SCORED
+}
+
+model Tournament {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  rounds      Round[]
+}
+
+model Round {
+  id               String     @id @default(cuid())
+  tournamentId     String
+  title            String
+  problemStatement String?
+  phase            RoundPhase @default(DRAFT)
+  reflectionMs     Int        @default(300000)
+  relaySliceMs     Int        @default(120000)
+  totalRelaySlices Int        @default(12)
+  startsAt         DateTime?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+  tournament       Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  teams            Team[]
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  role      UserRole
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  reviews   Score[]
+}
+
+model Team {
+  id           String       @id @default(cuid())
+  roundId      String
+  name         String
+  slug         String       @unique
+  status       TeamStatus   @default(REGISTERED)
+  stationLabel String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  round        Round        @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  members      TeamMember[]
+  submission   Submission?
+  scores       Score[]
+}
+
+model TeamMember {
+  id         String   @id @default(cuid())
+  teamId     String
+  fullName   String
+  relayOrder Int
+  createdAt  DateTime @default(now())
+  team       Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, relayOrder])
+}
+
+model Submission {
+  id            String    @id @default(cuid())
+  teamId        String    @unique
+  repositoryUrl String?
+  commitSha     String?
+  submittedAt   DateTime?
+  createdAt     DateTime  @default(now())
+  team          Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
+}
+
+model Score {
+  id          String   @id @default(cuid())
+  teamId      String
+  reviewerId  String?
+  correction  Int
+  edgeCases   Int
+  complexity  Int
+  readability Int
+  speedBonus  Int      @default(0)
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  team        Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  reviewer    User?    @relation(fields: [reviewerId], references: [id], onDelete: SetNull)
+}
