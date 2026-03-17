@@ -9,6 +9,7 @@ Toutes les evolutions notables du projet `Code Relay` sont documentees ici.
 - Client Prisma partage pour l'application serveur.
 - Migration Prisma initiale pour l'etat de manche, les equipes, les membres et les scores.
 - Flux temps reel SSE via `/api/live/stream`.
+- Notifications visuelles live pour fin imminente, rotation, pause/reprise et fin de manche.
 
 ### Changed
 - Le store fichier a ete remplace par une persistance Prisma/PostgreSQL.

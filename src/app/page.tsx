@@ -2,10 +2,12 @@
 
 import Link from "next/link";
 import { AppFrame } from "@/components/app-frame";
+import { LiveNotificationBanner } from "@/components/live-notification-banner";
 import { Panel } from "@/components/panel";
 import { PhaseTimer } from "@/components/phase-timer";
 import { RankingTable } from "@/components/ranking-table";
 import { buildLiveTeams, getRelayState } from "@/lib/demo-game";
+import { useRoundNotifications } from "@/lib/use-round-notifications";
 import { useLiveTeams } from "@/lib/use-live-teams";
 import { useEffect, useState } from "react";
 
@@ -20,6 +22,7 @@ export default function HomePage() {
   }, []);
 
   const relayState = getRelayState(round, now);
+  const notification = useRoundNotifications(relayState);
   const teams = buildLiveTeams(storedTeams, relayState);
 
   return (
@@ -27,6 +30,7 @@ export default function HomePage() {
       title="Control Room"
       subtitle="Aesthetic direction: industrial broadcast. The app is split into participant, organizer, judge and TV surfaces around a single match timeline."
     >
+      <LiveNotificationBanner notification={notification} />
       <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
         <div className="grid gap-6">
           <PhaseTimer state={relayState} />

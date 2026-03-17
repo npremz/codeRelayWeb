@@ -1,6 +1,8 @@
 "use client";
 
+import { LiveNotificationBanner } from "@/components/live-notification-banner";
 import { buildLiveTeams, formatClock, formatTieBreakTuple, getRelayState } from "@/lib/demo-game";
+import { useRoundNotifications } from "@/lib/use-round-notifications";
 import { useLiveTeams } from "@/lib/use-live-teams";
 import { useEffect, useState } from "react";
 
@@ -15,11 +17,13 @@ export default function TvPage() {
   }, []);
 
   const relayState = getRelayState(round, now);
+  const notification = useRoundNotifications(relayState);
   const teams = buildLiveTeams(storedTeams, relayState);
   const leader = teams[0];
 
   return (
     <main className="grain relative min-h-screen overflow-hidden bg-obsidian px-6 py-6 text-sand md:px-10 md:py-8">
+      <LiveNotificationBanner notification={notification} />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,122,36,0.22),transparent_32%),radial-gradient(circle_at_bottom_right,rgba(202,255,76,0.14),transparent_30%)]" />
       <div className="relative grid min-h-[calc(100vh-3rem)] gap-6 xl:grid-cols-[1.15fr_0.85fr]">
         <section className="rounded-[2.5rem] border border-white/10 bg-black/25 p-6 shadow-glow backdrop-blur md:p-8">

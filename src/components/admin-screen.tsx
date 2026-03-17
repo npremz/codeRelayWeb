@@ -1,10 +1,12 @@
 "use client";
 
 import { AppFrame } from "@/components/app-frame";
+import { LiveNotificationBanner } from "@/components/live-notification-banner";
 import { Panel } from "@/components/panel";
 import { PhaseTimer } from "@/components/phase-timer";
 import { AdminRoundAction } from "@/lib/game-types";
 import { buildLiveTeams, getRelayState, getRoundActionLabel, getStatusLabel } from "@/lib/demo-game";
+import { useRoundNotifications } from "@/lib/use-round-notifications";
 import { useLiveTeams } from "@/lib/use-live-teams";
 import { useEffect, useState } from "react";
 
@@ -25,6 +27,7 @@ export function AdminScreen({ staffRole }: AdminScreenProps) {
   }, []);
 
   const relayState = getRelayState(round, now);
+  const notification = useRoundNotifications(relayState);
   const teams = buildLiveTeams(storedTeams, relayState);
 
   const actions: Array<{ id: AdminRoundAction; label: string }> = [
@@ -94,6 +97,7 @@ export function AdminScreen({ staffRole }: AdminScreenProps) {
       title="Organizer"
       subtitle="Admin board for the game master. The MVP shows the round state, station supervision and the operational reminders needed to enforce the rules."
     >
+      <LiveNotificationBanner notification={notification} />
       <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
         <div className="grid gap-6">
           <Panel eyebrow="Session" title="Staff Context">
