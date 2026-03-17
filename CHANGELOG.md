@@ -2,6 +2,23 @@
 
 Toutes les evolutions notables du projet `Code Relay` sont documentees ici.
 
+## [0.5.0] - 2026-03-17
+
+### Added
+- Backend PostgreSQL local via [`compose.yaml`](./compose.yaml).
+- Client Prisma partage pour l'application serveur.
+- Migration Prisma initiale pour l'etat de manche, les equipes, les membres et les scores.
+
+### Changed
+- Le store fichier a ete remplace par une persistance Prisma/PostgreSQL.
+- Les routes existantes `teams`, `live`, `admin/round` et `admin/submissions` conservent la meme interface tout en lisant et ecrivant en base.
+- La documentation de demarrage inclut maintenant la pile backend locale.
+
+### Verified
+- `npx prisma migrate dev`
+- `npm run build`
+- smoke tests API avec PostgreSQL reel
+
 ## [0.2.0] - 2026-03-17
 
 ### Added
