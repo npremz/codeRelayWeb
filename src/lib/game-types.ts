@@ -67,6 +67,18 @@ export type RoundControlState = {
   updatedAt: string;
 };
 
+export type RoundSummary = {
+  id: string;
+  sequence: number;
+  name: string;
+  isCurrent: boolean;
+  registrationOpen: boolean;
+  phase: RoundPhase;
+  teamCount: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type RelayState = {
   phase: RoundPhase;
   elapsedMs: number;
@@ -102,9 +114,22 @@ export type TeamCreateResponse = {
   managePath: string;
 };
 
+export type AdminCreateRoundInput = {
+  name?: string;
+  cloneTeams?: boolean;
+  teamCodes?: string[];
+  makeCurrent?: boolean;
+};
+
+export type AdminSelectRoundInput = {
+  roundId: string;
+};
+
 export type LiveTeamsResponse = {
   teams: PublicTeam[];
   round: RoundControlState;
+  currentRound: RoundSummary | null;
+  rounds: RoundSummary[];
   usingDemoData: boolean;
 };
 

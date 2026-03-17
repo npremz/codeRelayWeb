@@ -3,16 +3,20 @@ import "server-only";
 import { createHash, randomBytes } from "node:crypto";
 import {
   Prisma,
-  RoundControl,
+  Round as PrismaRound,
   RoundPhase as PrismaRoundPhase,
+  Team as PrismaTeam,
   TeamStatus as PrismaTeamStatus
 } from "@prisma/client";
 import { defaultRoundState } from "@/lib/demo-game";
 import { prisma } from "@/lib/prisma";
 import {
+  AdminCreateRoundInput,
   AdminRoundAction,
+  AdminSelectRoundInput,
   PublicTeam,
   RoundControlState,
+  RoundSummary,
   TeamCreateInput,
   TeamCreateResponse,
   TeamScoreInput,
@@ -20,19 +24,35 @@ import {
   TeamUpdateInput
 } from "@/lib/game-types";
 
-const ROUND_CONTROL_ID = "default";
 const TEAM_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-const TEAM_INCLUDE = {
-  members: {
-    orderBy: {
-      relayOrder: "asc"
+
+const ROUND_ENTRY_INCLUDE = {
+  team: {
+    include: {
+      members: {
+        orderBy: {
+          relayOrder: "asc"
+        }
+      }
     }
   },
   score: true
-} satisfies Prisma.TeamInclude;
+} satisfies Prisma.RoundEntryInclude;
 
-type TeamWithRelations = Prisma.TeamGetPayload<{
-  include: typeof TEAM_INCLUDE;
+const ROUND_WITH_COUNT_INCLUDE = {
+  _count: {
+    select: {
+      entries: true
+    }
+  }
+} satisfies Prisma.RoundInclude;
+
+type RoundEntryWithRelations = Prisma.RoundEntryGetPayload<{
+  include: typeof ROUND_ENTRY_INCLUDE;
+}>;
+
+type RoundWithCount = Prisma.RoundGetPayload<{
+  include: typeof ROUND_WITH_COUNT_INCLUDE;
 }>;
 
 type StoreClient = Prisma.TransactionClient | typeof prisma;
@@ -62,8 +82,8 @@ function generateTeamCode(existingCodes: Set<string>) {
   return code;
 }
 
-function getNextStationLabel(count: number) {
-  return `PC-${String(count + 1).padStart(2, "0")}`;
+function getStationLabel(index: number) {
+  return `PC-${String(index + 1).padStart(2, "0")}`;
 }
 
 function toDbPhase(phase: RoundControlState["phase"]): PrismaRoundPhase {
@@ -146,66 +166,6 @@ function mapPreviousPhase(phase: PrismaRoundPhase | null): RoundControlState["pr
   return null;
 }
 
-function toPublicTeam(team: TeamWithRelations): PublicTeam {
-  return {
-    id: team.id,
-    teamCode: team.teamCode,
-    name: team.name,
-    station: team.station,
-    members: team.members.map((member) => ({
-      id: member.id,
-      name: member.name,
-      relayOrder: member.relayOrder
-    })),
-    status: fromDbStatus(team.status),
-    submittedAt: team.submittedAt?.toISOString() ?? null,
-    score: {
-      correction: team.score?.correction ?? 0,
-      edgeCases: team.score?.edgeCases ?? 0,
-      complexity: team.score?.complexity ?? 0,
-      readability: team.score?.readability ?? 0,
-      notes: team.score?.notes ?? ""
-    },
-    createdAt: team.createdAt.toISOString(),
-    updatedAt: team.updatedAt.toISOString(),
-    locked: team.locked
-  };
-}
-
-function toRoundState(round: RoundControl): RoundControlState {
-  return {
-    registrationOpen: round.registrationOpen,
-    phase: fromDbPhase(round.phase),
-    previousPhase: mapPreviousPhase(round.previousPhase),
-    phaseStartedAt: round.phaseStartedAt?.toISOString() ?? null,
-    pausedElapsedMs: round.pausedElapsedMs,
-    reflectionMs: round.reflectionMs,
-    relaySliceMs: round.relaySliceMs,
-    totalRelaySlices: round.totalRelaySlices,
-    updatedAt: round.updatedAt.toISOString()
-  };
-}
-
-async function ensureRoundControl(client: StoreClient) {
-  return client.roundControl.upsert({
-    where: {
-      id: ROUND_CONTROL_ID
-    },
-    update: {},
-    create: {
-      id: ROUND_CONTROL_ID,
-      registrationOpen: defaultRoundState.registrationOpen,
-      phase: toDbPhase(defaultRoundState.phase),
-      previousPhase: null,
-      phaseStartedAt: null,
-      pausedElapsedMs: null,
-      reflectionMs: defaultRoundState.reflectionMs,
-      relaySliceMs: defaultRoundState.relaySliceMs,
-      totalRelaySlices: defaultRoundState.totalRelaySlices
-    }
-  });
-}
-
 function normalizeNames(input: TeamCreateInput) {
   const name = input.name.trim();
   const members = input.members.map((member) => member.trim());
@@ -225,36 +185,281 @@ function isUniqueConstraintError(error: unknown) {
   return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002";
 }
 
-async function findTeamByCode(client: StoreClient, teamCode: string) {
+function toRoundState(round: PrismaRound): RoundControlState {
+  return {
+    registrationOpen: round.registrationOpen,
+    phase: fromDbPhase(round.phase),
+    previousPhase: mapPreviousPhase(round.previousPhase),
+    phaseStartedAt: round.phaseStartedAt?.toISOString() ?? null,
+    pausedElapsedMs: round.pausedElapsedMs,
+    reflectionMs: round.reflectionMs,
+    relaySliceMs: round.relaySliceMs,
+    totalRelaySlices: round.totalRelaySlices,
+    updatedAt: round.updatedAt.toISOString()
+  };
+}
+
+function toRoundSummary(round: RoundWithCount): RoundSummary {
+  return {
+    id: round.id,
+    sequence: round.sequence,
+    name: round.name,
+    isCurrent: round.isCurrent,
+    registrationOpen: round.registrationOpen,
+    phase: fromDbPhase(round.phase),
+    teamCount: round._count.entries,
+    createdAt: round.createdAt.toISOString(),
+    updatedAt: round.updatedAt.toISOString()
+  };
+}
+
+function getLatestUpdatedAt(entry: RoundEntryWithRelations) {
+  const timestamps = [
+    entry.updatedAt.getTime(),
+    entry.team.updatedAt.getTime(),
+    entry.score?.updatedAt.getTime() ?? 0
+  ];
+
+  return new Date(Math.max(...timestamps)).toISOString();
+}
+
+function toPublicTeam(entry: RoundEntryWithRelations): PublicTeam {
+  return {
+    id: entry.team.id,
+    teamCode: entry.team.teamCode,
+    name: entry.team.name,
+    station: entry.station,
+    members: entry.team.members.map((member) => ({
+      id: member.id,
+      name: member.name,
+      relayOrder: member.relayOrder
+    })),
+    status: fromDbStatus(entry.status),
+    submittedAt: entry.submittedAt?.toISOString() ?? null,
+    score: {
+      correction: entry.score?.correction ?? 0,
+      edgeCases: entry.score?.edgeCases ?? 0,
+      complexity: entry.score?.complexity ?? 0,
+      readability: entry.score?.readability ?? 0,
+      notes: entry.score?.notes ?? ""
+    },
+    createdAt: entry.createdAt.toISOString(),
+    updatedAt: getLatestUpdatedAt(entry),
+    locked: entry.locked
+  };
+}
+
+async function findCurrentRound(client: StoreClient) {
+  return client.round.findFirst({
+    where: {
+      isCurrent: true
+    },
+    orderBy: {
+      sequence: "asc"
+    }
+  });
+}
+
+async function createInitialRound(client: StoreClient) {
+  return client.round.create({
+    data: {
+      sequence: 1,
+      name: "Manche 1",
+      isCurrent: true,
+      registrationOpen: defaultRoundState.registrationOpen,
+      phase: toDbPhase(defaultRoundState.phase),
+      previousPhase: null,
+      phaseStartedAt: null,
+      pausedElapsedMs: null,
+      reflectionMs: defaultRoundState.reflectionMs,
+      relaySliceMs: defaultRoundState.relaySliceMs,
+      totalRelaySlices: defaultRoundState.totalRelaySlices
+    }
+  });
+}
+
+async function ensureCurrentRound(client: StoreClient) {
+  const currentRound = await findCurrentRound(client);
+
+  if (currentRound) {
+    return currentRound;
+  }
+
+  const firstRound = await client.round.findFirst({
+    orderBy: {
+      sequence: "asc"
+    }
+  });
+
+  if (firstRound) {
+    return client.round.update({
+      where: {
+        id: firstRound.id
+      },
+      data: {
+        isCurrent: true
+      }
+    });
+  }
+
+  try {
+    return await createInitialRound(client);
+  } catch (error) {
+    if (!isUniqueConstraintError(error)) {
+      throw error;
+    }
+
+    const retryRound = await client.round.findFirst({
+      orderBy: {
+        sequence: "asc"
+      }
+    });
+
+    if (!retryRound) {
+      throw error;
+    }
+
+    if (retryRound.isCurrent) {
+      return retryRound;
+    }
+
+    return client.round.update({
+      where: {
+        id: retryRound.id
+      },
+      data: {
+        isCurrent: true
+      }
+    });
+  }
+}
+
+async function listAllTeamCodes(client: StoreClient) {
+  const teams = await client.team.findMany({
+    select: {
+      teamCode: true
+    }
+  });
+
+  return new Set(teams.map((team) => team.teamCode));
+}
+
+async function findCurrentEntryByTeamCode(client: StoreClient, teamCode: string) {
+  const round = await ensureCurrentRound(client);
+
+  return client.roundEntry.findFirst({
+    where: {
+      roundId: round.id,
+      team: {
+        teamCode: teamCode.toUpperCase()
+      }
+    },
+    include: ROUND_ENTRY_INCLUDE
+  });
+}
+
+async function findTeamWithMembersByCode(client: StoreClient, teamCode: string) {
   return client.team.findUnique({
     where: {
       teamCode: teamCode.toUpperCase()
     },
-    include: TEAM_INCLUDE
+    include: {
+      members: {
+        orderBy: {
+          relayOrder: "asc"
+        }
+      }
+    }
   });
+}
+
+async function getNextRoundSequence(client: StoreClient) {
+  const latestRound = await client.round.findFirst({
+    orderBy: {
+      sequence: "desc"
+    }
+  });
+
+  return (latestRound?.sequence ?? 0) + 1;
+}
+
+async function listSourceTeamsForNewRound(
+  client: StoreClient,
+  sourceRoundId: string,
+  teamCodes: string[] | undefined
+) {
+  const normalizedCodes = teamCodes?.map((teamCode) => teamCode.trim().toUpperCase()).filter(Boolean);
+
+  return client.roundEntry.findMany({
+    where: {
+      roundId: sourceRoundId,
+      ...(normalizedCodes && normalizedCodes.length > 0
+        ? {
+            team: {
+              teamCode: {
+                in: normalizedCodes
+              }
+            }
+          }
+        : {})
+    },
+    include: {
+      team: true
+    },
+    orderBy: {
+      createdAt: "asc"
+    }
+  });
+}
+
+export async function listRounds(): Promise<RoundSummary[]> {
+  await ensureCurrentRound(prisma);
+
+  const rounds = await prisma.round.findMany({
+    include: ROUND_WITH_COUNT_INCLUDE,
+    orderBy: {
+      sequence: "asc"
+    }
+  });
+
+  return rounds.map(toRoundSummary);
+}
+
+export async function getCurrentRoundSummary(): Promise<RoundSummary | null> {
+  const currentRound = await ensureCurrentRound(prisma);
+  const round = await prisma.round.findUnique({
+    where: {
+      id: currentRound.id
+    },
+    include: ROUND_WITH_COUNT_INCLUDE
+  });
+
+  return round ? toRoundSummary(round) : null;
 }
 
 export async function listStoredTeams(): Promise<PublicTeam[]> {
-  await ensureRoundControl(prisma);
-
-  const teams = await prisma.team.findMany({
+  const currentRound = await ensureCurrentRound(prisma);
+  const entries = await prisma.roundEntry.findMany({
+    where: {
+      roundId: currentRound.id
+    },
+    include: ROUND_ENTRY_INCLUDE,
     orderBy: {
       createdAt: "asc"
-    },
-    include: TEAM_INCLUDE
+    }
   });
 
-  return teams.map(toPublicTeam);
+  return entries.map(toPublicTeam);
 }
 
 export async function getRoundState(): Promise<RoundControlState> {
-  const round = await ensureRoundControl(prisma);
+  const round = await ensureCurrentRound(prisma);
   return toRoundState(round);
 }
 
 export async function getPublicTeam(teamCode: string): Promise<PublicTeam | null> {
-  const team = await findTeamByCode(prisma, teamCode);
-  return team ? toPublicTeam(team) : null;
+  const entry = await findCurrentEntryByTeamCode(prisma, teamCode);
+  return entry ? toPublicTeam(entry) : null;
 }
 
 export async function createTeam(input: TeamCreateInput): Promise<TeamCreateResponse> {
@@ -264,36 +469,43 @@ export async function createTeam(input: TeamCreateInput): Promise<TeamCreateResp
 
   for (let attempt = 0; attempt < 5; attempt += 1) {
     try {
-      const team = await prisma.$transaction(async (tx) => {
-        const round = await ensureRoundControl(tx);
+      const entry = await prisma.$transaction(async (tx) => {
+        const currentRound = await ensureCurrentRound(tx);
 
-        if (!round.registrationOpen) {
+        if (!currentRound.registrationOpen) {
           throw new Error("Les inscriptions sont fermees.");
         }
 
-        const [existingCodes, count] = await Promise.all([
-          tx.team.findMany({
-            select: {
-              teamCode: true
+        const [existingCodes, currentEntriesCount] = await Promise.all([
+          listAllTeamCodes(tx),
+          tx.roundEntry.count({
+            where: {
+              roundId: currentRound.id
             }
-          }),
-          tx.team.count()
+          })
         ]);
 
-        const nextTeam = await tx.team.create({
+        const team = await tx.team.create({
           data: {
-            teamCode: generateTeamCode(new Set(existingCodes.map((team) => team.teamCode))),
+            teamCode: generateTeamCode(existingCodes),
             editTokenHash,
             name,
-            station: getNextStationLabel(count),
-            status: PrismaTeamStatus.REGISTERED,
-            locked: false,
             members: {
               create: members.map((member, index) => ({
                 name: member,
                 relayOrder: index + 1
               }))
-            },
+            }
+          }
+        });
+
+        return tx.roundEntry.create({
+          data: {
+            roundId: currentRound.id,
+            teamId: team.id,
+            station: getStationLabel(currentEntriesCount),
+            status: PrismaTeamStatus.REGISTERED,
+            locked: false,
             score: {
               create: {
                 correction: 0,
@@ -304,16 +516,14 @@ export async function createTeam(input: TeamCreateInput): Promise<TeamCreateResp
               }
             }
           },
-          include: TEAM_INCLUDE
+          include: ROUND_ENTRY_INCLUDE
         });
-
-        return nextTeam;
       });
 
       return {
-        team: toPublicTeam(team),
+        team: toPublicTeam(entry),
         editToken,
-        managePath: `/team/${team.teamCode}/manage?token=${editToken}`
+        managePath: `/team/${entry.team.teamCode}/manage?token=${editToken}`
       };
     } catch (error) {
       if (isUniqueConstraintError(error)) {
@@ -328,30 +538,45 @@ export async function createTeam(input: TeamCreateInput): Promise<TeamCreateResp
 }
 
 export async function getManagedTeam(teamCode: string, token: string): Promise<PublicTeam | null> {
-  const team = await findTeamByCode(prisma, teamCode);
+  const team = await findTeamWithMembersByCode(prisma, teamCode);
 
   if (!team || team.editTokenHash !== hashToken(token)) {
     return null;
   }
 
-  return toPublicTeam(team);
+  const entry = await findCurrentEntryByTeamCode(prisma, teamCode);
+  return entry ? toPublicTeam(entry) : null;
 }
 
 export async function updateTeamByToken(teamCode: string, input: TeamUpdateInput): Promise<PublicTeam | null> {
   const { name, members } = normalizeNames(input);
 
   return prisma.$transaction(async (tx) => {
-    const team = await findTeamByCode(tx, teamCode);
+    const team = await findTeamWithMembersByCode(tx, teamCode);
 
     if (!team || team.editTokenHash !== hashToken(input.token)) {
       return null;
     }
 
-    if (team.locked) {
+    const currentRound = await ensureCurrentRound(tx);
+    const currentEntry = await tx.roundEntry.findUnique({
+      where: {
+        roundId_teamId: {
+          roundId: currentRound.id,
+          teamId: team.id
+        }
+      }
+    });
+
+    if (!currentEntry) {
+      return null;
+    }
+
+    if (currentEntry.locked) {
       throw new Error("Cette equipe est verrouillee.");
     }
 
-    const updated = await tx.team.update({
+    await tx.team.update({
       where: {
         id: team.id
       },
@@ -364,25 +589,34 @@ export async function updateTeamByToken(teamCode: string, input: TeamUpdateInput
             relayOrder: index + 1
           }))
         }
-      },
-      include: TEAM_INCLUDE
+      }
     });
 
-    return toPublicTeam(updated);
+    const updatedEntry = await tx.roundEntry.findUniqueOrThrow({
+      where: {
+        roundId_teamId: {
+          roundId: currentRound.id,
+          teamId: team.id
+        }
+      },
+      include: ROUND_ENTRY_INCLUDE
+    });
+
+    return toPublicTeam(updatedEntry);
   });
 }
 
 export async function updateTeamScore(teamCode: string, input: TeamScoreInput): Promise<PublicTeam | null> {
   return prisma.$transaction(async (tx) => {
-    const team = await findTeamByCode(tx, teamCode);
+    const entry = await findCurrentEntryByTeamCode(tx, teamCode);
 
-    if (!team) {
+    if (!entry) {
       return null;
     }
 
-    await tx.score.upsert({
+    await tx.roundScore.upsert({
       where: {
-        teamId: team.id
+        roundEntryId: entry.id
       },
       update: {
         correction: clamp(input.correction, 0, 40),
@@ -392,7 +626,7 @@ export async function updateTeamScore(teamCode: string, input: TeamScoreInput): 
         notes: input.notes?.trim() ?? ""
       },
       create: {
-        teamId: team.id,
+        roundEntryId: entry.id,
         correction: clamp(input.correction, 0, 40),
         edgeCases: clamp(input.edgeCases, 0, 20),
         complexity: clamp(input.complexity, 0, 20),
@@ -401,23 +635,24 @@ export async function updateTeamScore(teamCode: string, input: TeamScoreInput): 
       }
     });
 
-    const updated = await tx.team.update({
+    const updatedEntry = await tx.roundEntry.update({
       where: {
-        id: team.id
+        id: entry.id
       },
       data: {
         status: PrismaTeamStatus.SCORED
       },
-      include: TEAM_INCLUDE
+      include: ROUND_ENTRY_INCLUDE
     });
 
-    return toPublicTeam(updated);
+    return toPublicTeam(updatedEntry);
   });
 }
 
-async function setPendingTeamsLocked(tx: Prisma.TransactionClient, locked: boolean) {
-  await tx.team.updateMany({
+async function setPendingEntriesLocked(tx: Prisma.TransactionClient, roundId: string, locked: boolean) {
+  await tx.roundEntry.updateMany({
     where: {
+      roundId,
       status: {
         in: [PrismaTeamStatus.REGISTERED, PrismaTeamStatus.READY, PrismaTeamStatus.CODING]
       }
@@ -428,8 +663,9 @@ async function setPendingTeamsLocked(tx: Prisma.TransactionClient, locked: boole
   });
 
   if (!locked) {
-    await tx.team.updateMany({
+    await tx.roundEntry.updateMany({
       where: {
+        roundId,
         status: PrismaTeamStatus.READY
       },
       data: {
@@ -439,7 +675,7 @@ async function setPendingTeamsLocked(tx: Prisma.TransactionClient, locked: boole
   }
 }
 
-function getElapsedForPhase(round: RoundControl, now: Date) {
+function getElapsedForPhase(round: PrismaRound, now: Date) {
   if (!round.phaseStartedAt) {
     return round.pausedElapsedMs ?? 0;
   }
@@ -449,14 +685,14 @@ function getElapsedForPhase(round: RoundControl, now: Date) {
 
 export async function applyAdminRoundAction(action: AdminRoundAction): Promise<RoundControlState> {
   const round = await prisma.$transaction(async (tx) => {
-    const currentRound = await ensureRoundControl(tx);
+    const currentRound = await ensureCurrentRound(tx);
     const now = new Date();
 
     switch (action) {
       case "open_registration":
-        await tx.roundControl.update({
+        await tx.round.update({
           where: {
-            id: ROUND_CONTROL_ID
+            id: currentRound.id
           },
           data: {
             registrationOpen: true
@@ -464,24 +700,24 @@ export async function applyAdminRoundAction(action: AdminRoundAction): Promise<R
         });
 
         if (currentRound.phase === PrismaRoundPhase.DRAFT || currentRound.phase === PrismaRoundPhase.COMPLETE) {
-          await setPendingTeamsLocked(tx, false);
+          await setPendingEntriesLocked(tx, currentRound.id, false);
         }
         break;
       case "close_registration":
-        await tx.roundControl.update({
+        await tx.round.update({
           where: {
-            id: ROUND_CONTROL_ID
+            id: currentRound.id
           },
           data: {
             registrationOpen: false
           }
         });
-        await setPendingTeamsLocked(tx, true);
+        await setPendingEntriesLocked(tx, currentRound.id, true);
         break;
       case "start_reflection":
-        await tx.roundControl.update({
+        await tx.round.update({
           where: {
-            id: ROUND_CONTROL_ID
+            id: currentRound.id
           },
           data: {
             registrationOpen: false,
@@ -491,8 +727,9 @@ export async function applyAdminRoundAction(action: AdminRoundAction): Promise<R
             pausedElapsedMs: null
           }
         });
-        await tx.team.updateMany({
+        await tx.roundEntry.updateMany({
           where: {
+            roundId: currentRound.id,
             status: {
               in: [PrismaTeamStatus.REGISTERED, PrismaTeamStatus.READY, PrismaTeamStatus.CODING]
             }
@@ -505,9 +742,9 @@ export async function applyAdminRoundAction(action: AdminRoundAction): Promise<R
         });
         break;
       case "start_relay":
-        await tx.roundControl.update({
+        await tx.round.update({
           where: {
-            id: ROUND_CONTROL_ID
+            id: currentRound.id
           },
           data: {
             registrationOpen: false,
@@ -517,8 +754,9 @@ export async function applyAdminRoundAction(action: AdminRoundAction): Promise<R
             pausedElapsedMs: null
           }
         });
-        await tx.team.updateMany({
+        await tx.roundEntry.updateMany({
           where: {
+            roundId: currentRound.id,
             status: {
               in: [PrismaTeamStatus.REGISTERED, PrismaTeamStatus.READY, PrismaTeamStatus.CODING]
             }
@@ -531,9 +769,9 @@ export async function applyAdminRoundAction(action: AdminRoundAction): Promise<R
         break;
       case "pause_round":
         if (currentRound.phase === PrismaRoundPhase.REFLECTION || currentRound.phase === PrismaRoundPhase.RELAY) {
-          await tx.roundControl.update({
+          await tx.round.update({
             where: {
-              id: ROUND_CONTROL_ID
+              id: currentRound.id
             },
             data: {
               previousPhase: currentRound.phase,
@@ -546,9 +784,9 @@ export async function applyAdminRoundAction(action: AdminRoundAction): Promise<R
         break;
       case "resume_round":
         if (currentRound.phase === PrismaRoundPhase.PAUSED && currentRound.previousPhase) {
-          await tx.roundControl.update({
+          await tx.round.update({
             where: {
-              id: ROUND_CONTROL_ID
+              id: currentRound.id
             },
             data: {
               phase: currentRound.previousPhase,
@@ -560,9 +798,9 @@ export async function applyAdminRoundAction(action: AdminRoundAction): Promise<R
         }
         break;
       case "close_round":
-        await tx.roundControl.update({
+        await tx.round.update({
           where: {
-            id: ROUND_CONTROL_ID
+            id: currentRound.id
           },
           data: {
             registrationOpen: false,
@@ -572,15 +810,15 @@ export async function applyAdminRoundAction(action: AdminRoundAction): Promise<R
             pausedElapsedMs: null
           }
         });
-        await setPendingTeamsLocked(tx, true);
+        await setPendingEntriesLocked(tx, currentRound.id, true);
         break;
       default:
         break;
     }
 
-    return tx.roundControl.findUniqueOrThrow({
+    return tx.round.findUniqueOrThrow({
       where: {
-        id: ROUND_CONTROL_ID
+        id: currentRound.id
       }
     });
   });
@@ -590,24 +828,130 @@ export async function applyAdminRoundAction(action: AdminRoundAction): Promise<R
 
 export async function markTeamSubmitted(teamCode: string): Promise<PublicTeam | null> {
   return prisma.$transaction(async (tx) => {
-    const team = await findTeamByCode(tx, teamCode);
+    const entry = await findCurrentEntryByTeamCode(tx, teamCode);
 
-    if (!team) {
+    if (!entry) {
       return null;
     }
 
-    const updated = await tx.team.update({
+    const updatedEntry = await tx.roundEntry.update({
       where: {
-        id: team.id
+        id: entry.id
       },
       data: {
-        submittedAt: team.submittedAt ?? new Date(),
+        submittedAt: entry.submittedAt ?? new Date(),
         locked: true,
-        ...(team.status === PrismaTeamStatus.SCORED ? {} : { status: PrismaTeamStatus.SUBMITTED })
+        ...(entry.status === PrismaTeamStatus.SCORED ? {} : { status: PrismaTeamStatus.SUBMITTED })
       },
-      include: TEAM_INCLUDE
+      include: ROUND_ENTRY_INCLUDE
     });
 
-    return toPublicTeam(updated);
+    return toPublicTeam(updatedEntry);
   });
+}
+
+export async function createRound(input: AdminCreateRoundInput = {}): Promise<RoundSummary> {
+  const round = await prisma.$transaction(async (tx) => {
+    const currentRound = await ensureCurrentRound(tx);
+    const nextSequence = await getNextRoundSequence(tx);
+    const shouldCloneTeams = input.cloneTeams !== false;
+    const makeCurrent = input.makeCurrent !== false;
+
+    if (makeCurrent) {
+      await tx.round.updateMany({
+        data: {
+          isCurrent: false
+        }
+      });
+    }
+
+    const nextRound = await tx.round.create({
+      data: {
+        sequence: nextSequence,
+        name: input.name?.trim() || `Manche ${nextSequence}`,
+        isCurrent: makeCurrent,
+        registrationOpen: true,
+        phase: PrismaRoundPhase.DRAFT,
+        previousPhase: null,
+        phaseStartedAt: null,
+        pausedElapsedMs: null,
+        reflectionMs: defaultRoundState.reflectionMs,
+        relaySliceMs: defaultRoundState.relaySliceMs,
+        totalRelaySlices: defaultRoundState.totalRelaySlices
+      }
+    });
+
+    if (shouldCloneTeams) {
+      const sourceEntries = await listSourceTeamsForNewRound(tx, currentRound.id, input.teamCodes);
+
+      for (const [index, sourceEntry] of sourceEntries.entries()) {
+        await tx.roundEntry.create({
+          data: {
+            roundId: nextRound.id,
+            teamId: sourceEntry.teamId,
+            station: getStationLabel(index),
+            status: PrismaTeamStatus.REGISTERED,
+            locked: false,
+            submittedAt: null,
+            score: {
+              create: {
+                correction: 0,
+                edgeCases: 0,
+                complexity: 0,
+                readability: 0,
+                notes: ""
+              }
+            }
+          }
+        });
+      }
+    }
+
+    return tx.round.findUniqueOrThrow({
+      where: {
+        id: nextRound.id
+      },
+      include: ROUND_WITH_COUNT_INCLUDE
+    });
+  });
+
+  return toRoundSummary(round);
+}
+
+export async function setCurrentRound(input: AdminSelectRoundInput): Promise<RoundSummary> {
+  const round = await prisma.$transaction(async (tx) => {
+    const targetRound = await tx.round.findUnique({
+      where: {
+        id: input.roundId
+      }
+    });
+
+    if (!targetRound) {
+      throw new Error("Manche introuvable.");
+    }
+
+    await tx.round.updateMany({
+      data: {
+        isCurrent: false
+      }
+    });
+
+    await tx.round.update({
+      where: {
+        id: input.roundId
+      },
+      data: {
+        isCurrent: true
+      }
+    });
+
+    return tx.round.findUniqueOrThrow({
+      where: {
+        id: input.roundId
+      },
+      include: ROUND_WITH_COUNT_INCLUDE
+    });
+  });
+
+  return toRoundSummary(round);
 }

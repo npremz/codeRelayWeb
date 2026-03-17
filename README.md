@@ -54,8 +54,50 @@ Pour un backend local rapide, le projet fournit [`compose.yaml`](./compose.yaml)
 Le projet livre:
 
 - un design system pour l'univers "control room"
-- un backend PostgreSQL via Prisma pour les equipes, les scores et l'etat de manche
+- un backend PostgreSQL via Prisma pour les equipes, les scores et plusieurs manches
 - un flux participant sans login avec code d'equipe et token secret
 - un acces staff protege par code court pour `admin` et `judge`
-- des controles admin reels pour inscriptions, phases et soumissions
+- des controles admin reels pour inscriptions, phases, soumissions et manche courante
 - une base solide pour brancher ensuite du temps reel multi-client
+
+## Modele multi-manches
+
+Le backend distingue maintenant:
+
+- `Team`: identite stable de l'equipe
+- `Round`: une manche avec son timer et sa phase
+- `RoundEntry`: la participation d'une equipe a une manche
+- `RoundScore`: la note de cette equipe pour cette manche
+
+Les routes historiques continuent a viser la manche courante:
+
+- `GET /api/live`
+- `POST /api/teams`
+- `POST /api/admin/round`
+- `POST /api/admin/submissions/[teamCode]`
+- `PUT /api/teams/[teamCode]/score`
+
+Nouvelles routes admin pour jouer plusieurs manches:
+
+- `GET /api/admin/rounds`
+- `POST /api/admin/rounds`
+- `PUT /api/admin/rounds/current`
+
+Exemple de creation d'une nouvelle manche en clonant les equipes de la manche courante:
+
+```json
+{
+  "name": "Manche 2",
+  "cloneTeams": true
+}
+```
+
+Exemple pour ne garder que certains qualifies:
+
+```json
+{
+  "name": "Finale",
+  "cloneTeams": true,
+  "teamCodes": ["AB12C", "ZX98Q", "K7MNP"]
+}
+```

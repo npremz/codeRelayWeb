@@ -23,18 +23,25 @@ enum TeamStatus {
   SCORED
 }
 
-model RoundControl {
-  id               String     @id
-  registrationOpen Boolean    @default(true)
-  phase            RoundPhase @default(DRAFT)
+model Round {
+  id               String       @id @default(cuid())
+  sequence         Int          @unique
+  name             String
+  isCurrent        Boolean      @default(false)
+  registrationOpen Boolean      @default(true)
+  phase            RoundPhase   @default(DRAFT)
   previousPhase    RoundPhase?
   phaseStartedAt   DateTime?
   pausedElapsedMs  Int?
-  reflectionMs     Int        @default(300000)
-  relaySliceMs     Int        @default(120000)
-  totalRelaySlices Int        @default(12)
-  createdAt        DateTime   @default(now())
-  updatedAt        DateTime   @updatedAt
+  reflectionMs     Int          @default(300000)
+  relaySliceMs     Int          @default(120000)
+  totalRelaySlices Int          @default(12)
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  entries          RoundEntry[]
+
+  @@index([isCurrent])
+  @@index([createdAt])
 }
 
 model Team {
@@ -42,14 +49,10 @@ model Team {
   teamCode      String       @unique
   editTokenHash String
   name          String
-  station       String
-  status        TeamStatus   @default(REGISTERED)
-  locked        Boolean      @default(false)
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
-  submittedAt   DateTime?
   members       TeamMember[]
-  score         Score?
+  entries       RoundEntry[]
 
   @@index([createdAt])
 }
@@ -65,15 +68,34 @@ model TeamMember {
   @@unique([teamId, relayOrder])
 }
 
-model Score {
-  id          String   @id @default(cuid())
-  teamId      String   @unique
-  correction  Int      @default(0)
-  edgeCases   Int      @default(0)
-  complexity  Int      @default(0)
-  readability Int      @default(0)
-  notes       String   @default("")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  team        Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+model RoundEntry {
+  id          String      @id @default(cuid())
+  roundId     String
+  teamId      String
+  station     String
+  status      TeamStatus  @default(REGISTERED)
+  locked      Boolean     @default(false)
+  submittedAt DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  round       Round       @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  team        Team        @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  score       RoundScore?
+
+  @@unique([roundId, teamId])
+  @@unique([roundId, station])
+  @@index([roundId, createdAt])
+}
+
+model RoundScore {
+  id           String     @id @default(cuid())
+  roundEntryId String     @unique
+  correction   Int        @default(0)
+  edgeCases    Int        @default(0)
+  complexity   Int        @default(0)
+  readability  Int        @default(0)
+  notes        String     @default("")
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  roundEntry   RoundEntry @relation(fields: [roundEntryId], references: [id], onDelete: Cascade)
 }

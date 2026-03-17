@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { AdminRoundAction } from "@/lib/game-types";
 import { getStaffSession } from "@/lib/staff-auth";
-import { applyAdminRoundAction, getRoundState } from "@/lib/team-store";
+import { applyAdminRoundAction, getCurrentRoundSummary, getRoundState } from "@/lib/team-store";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +19,9 @@ export async function GET() {
     return NextResponse.json({ error: "Session admin requise." }, { status: 401 });
   }
 
-  return NextResponse.json({ round: await getRoundState() });
+  const [round, currentRound] = await Promise.all([getRoundState(), getCurrentRoundSummary()]);
+
+  return NextResponse.json({ round, currentRound });
 }
 
 export async function POST(request: NextRequest) {
@@ -34,5 +36,7 @@ export async function POST(request: NextRequest) {
   }
 
   const round = await applyAdminRoundAction(body.action);
-  return NextResponse.json({ round });
+  const currentRound = await getCurrentRoundSummary();
+
+  return NextResponse.json({ round, currentRound });
 }
