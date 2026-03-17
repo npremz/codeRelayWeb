@@ -1,15 +1,9 @@
 import { NextResponse } from "next/server";
-import { listStoredTeams, getRoundState } from "@/lib/team-store";
+import { getLiveSnapshot } from "@/lib/live-data";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function GET() {
-  const teams = await listStoredTeams();
-  const round = await getRoundState();
-
-  return NextResponse.json({
-    teams,
-    round,
-    usingDemoData: false
-  });
+  return NextResponse.json(await getLiveSnapshot());
 }

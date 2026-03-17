@@ -8,16 +8,19 @@ Toutes les evolutions notables du projet `Code Relay` sont documentees ici.
 - Backend PostgreSQL local via [`compose.yaml`](./compose.yaml).
 - Client Prisma partage pour l'application serveur.
 - Migration Prisma initiale pour l'etat de manche, les equipes, les membres et les scores.
+- Flux temps reel SSE via `/api/live/stream`.
 
 ### Changed
 - Le store fichier a ete remplace par une persistance Prisma/PostgreSQL.
 - Les routes existantes `teams`, `live`, `admin/round` et `admin/submissions` conservent la meme interface tout en lisant et ecrivant en base.
 - La documentation de demarrage inclut maintenant la pile backend locale.
+- Les ecrans `admin`, `judge`, `results`, `tv`, `overview` et `register` consomment maintenant le backend live via `EventSource`.
 
 ### Verified
 - `npx prisma migrate dev`
 - `npm run build`
 - smoke tests API avec PostgreSQL reel
+- smoke tests SSE sur creation d'equipe et changements de manche
 
 ## [0.2.0] - 2026-03-17
 

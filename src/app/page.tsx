@@ -41,10 +41,10 @@ export default function HomePage() {
             </Panel>
             <Panel eyebrow="Next Step" title="Backend Hooks">
               <ul className="space-y-3 text-sm text-fog">
-                <li>Replace the local JSON store with PostgreSQL through the existing Prisma schema.</li>
-                <li>Expose live updates over WebSocket or Server-Sent Events.</li>
-                <li>Add authentication gates per role for admin and judges only.</li>
-                <li>Capture submission timestamps to assign speed bonus automatically.</li>
+                <li>PostgreSQL et Prisma portent maintenant l'etat central du tournoi.</li>
+                <li>Les surfaces live recoivent les updates en SSE depuis le backend.</li>
+                <li>Les acces staff restent limites a `admin` et `judge`.</li>
+                <li>Les timestamps de soumission pilotent le bonus rapidite automatiquement.</li>
               </ul>
             </Panel>
           </div>
@@ -54,7 +54,7 @@ export default function HomePage() {
             <p className="text-sm text-fog">
               {storedTeams.length === 0
                 ? "Aucune equipe enregistree pour l'instant. Le tournoi attend encore ses inscriptions."
-                : `${storedTeams.length} equipe(s) enregistree(s) dans le store local du projet.`}
+                : `${storedTeams.length} equipe(s) enregistree(s) dans le backend du tournoi.`}
             </p>
           </Panel>
           <Panel eyebrow="Quick Access" title="Screens">

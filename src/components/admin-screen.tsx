@@ -16,7 +16,7 @@ export function AdminScreen({ staffRole }: AdminScreenProps) {
   const [now, setNow] = useState(0);
   const [busyAction, setBusyAction] = useState<string | null>(null);
   const [message, setMessage] = useState("");
-  const { teams: storedTeams, round, refresh } = useLiveTeams();
+  const { teams: storedTeams, round, refresh, connected } = useLiveTeams();
 
   useEffect(() => {
     setNow(Date.now());
@@ -126,7 +126,7 @@ export function AdminScreen({ staffRole }: AdminScreenProps) {
               </p>
             )}
             <p className="mt-2 text-sm text-fog">
-              Les actions modifient le store de manche et se propagent aux autres ecrans via `/api/live`.
+              Flux live: <span className={connected ? "text-lime" : "text-signal"}>{connected ? "SSE actif" : "reconnexion"}</span>
             </p>
             <p className="mt-2 text-sm text-fog">
               {storedTeams.length} equipe(s) stockee(s) dans le tournoi.

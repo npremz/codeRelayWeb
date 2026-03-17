@@ -31,7 +31,7 @@ type JudgeScreenProps = {
 
 export function JudgeScreen({ staffRole }: JudgeScreenProps) {
   const [now, setNow] = useState(0);
-  const { teams, round, usingDemoData, refresh } = useLiveTeams();
+  const { teams, round, usingDemoData, refresh, connected } = useLiveTeams();
   const [selectedTeamId, setSelectedTeamId] = useState("");
   const [scores, setScores] = useState<JudgeScores>({});
   const [saving, setSaving] = useState(false);
@@ -156,12 +156,15 @@ export function JudgeScreen({ staffRole }: JudgeScreenProps) {
           <p className="text-sm text-fog">
             Role actif: <span className="text-sand">{staffRole}</span>. L'API de scoring exige une session staff valide.
           </p>
+          <p className="mt-2 text-sm text-fog">
+            Flux live: <span className={connected ? "text-lime" : "text-signal"}>{connected ? "SSE actif" : "reconnexion"}</span>
+          </p>
         </Panel>
         <Panel eyebrow="Queue" title="Teams To Review">
           <p className="mb-4 text-sm text-fog">
             {usingDemoData
               ? "Mode demo actif. Les notes ne seront pas reliees a de vraies equipes."
-              : `${teams.length} equipe(s) chargee(s) depuis le store local.`}
+              : `${teams.length} equipe(s) chargee(s) depuis le backend live.`}
           </p>
           <div className="grid gap-3">
             {teams.map((team) => {
