@@ -3,53 +3,27 @@
 import Link from "next/link";
 import { AppFrame } from "@/components/app-frame";
 import { Panel } from "@/components/panel";
-import { PublicTeam, TeamCreateResponse } from "@/lib/game-types";
 import { getStoredTeamAccess, storeTeamAccess } from "@/lib/team-access";
+import { TeamCreateResponse } from "@/lib/game-types";
+import { useLiveTeams } from "@/lib/use-live-teams";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
 export default function RegisterPage() {
   const [teamName, setTeamName] = useState("");
   const [memberNames, setMemberNames] = useState(["", "", ""]);
-  const [teams, setTeams] = useState<PublicTeam[]>([]);
   const [myTeamCodes, setMyTeamCodes] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [createdTeam, setCreatedTeam] = useState<TeamCreateResponse | null>(null);
+  const { teams, round, refresh } = useLiveTeams();
 
   useEffect(() => {
-    let cancelled = false;
-
-    async function load() {
-      try {
-        const response = await fetch("/api/teams", { cache: "no-store" });
-
-        if (!response.ok) {
-          return;
-        }
-
-        const payload = (await response.json()) as { teams: PublicTeam[] };
-
-        if (!cancelled) {
-          setTeams(payload.teams.slice().reverse());
-          setMyTeamCodes(Object.keys(getStoredTeamAccess()));
-        }
-      } catch {
-        return;
-      }
-    }
-
-    load();
-    const interval = window.setInterval(load, 4000);
-
-    return () => {
-      cancelled = true;
-      window.clearInterval(interval);
-    };
+    setMyTeamCodes(Object.keys(getStoredTeamAccess()));
   }, []);
 
   const canSubmit = useMemo(
-    () => teamName.trim().length > 1 && memberNames.every((name) => name.trim().length > 1),
-    [memberNames, teamName]
+    () => round.registrationOpen && teamName.trim().length > 1 && memberNames.every((name) => name.trim().length > 1),
+    [memberNames, round.registrationOpen, teamName]
   );
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -83,7 +57,7 @@ export default function RegisterPage() {
       storeTeamAccess(payload.team.teamCode, payload.editToken);
       setCreatedTeam(payload);
       setMyTeamCodes((current) => Array.from(new Set([payload.team.teamCode, ...current])));
-      setTeams((current) => [payload.team, ...current]);
+      await refresh();
       setTeamName("");
       setMemberNames(["", "", ""]);
     } catch (nextError) {
@@ -135,10 +109,14 @@ export default function RegisterPage() {
               Sans login: on genere un code equipe public et un token secret d'edition memorise sur cet appareil.
             </div>
 
+            <div className="rounded-[1.5rem] border border-white/10 bg-white/5 p-4 text-sm text-fog">
+              Inscriptions: <span className="text-sand">{round.registrationOpen ? "ouvertes" : "fermees"}</span>
+            </div>
+
             {error && <p className="text-sm text-signal">{error}</p>}
 
             <button className="signal-button" type="submit" disabled={!canSubmit || submitting}>
-              {submitting ? "Creating..." : "Register Team"}
+              {submitting ? "Creating..." : round.registrationOpen ? "Register Team" : "Registration Closed"}
             </button>
           </form>
         </Panel>
@@ -192,7 +170,7 @@ export default function RegisterPage() {
           <Panel eyebrow="Registered" title="Tournament Queue">
             <div className="grid gap-4">
               {teams.length === 0 && <p className="text-sm text-fog">Aucune equipe enregistree pour le moment.</p>}
-              {teams.map((team) => (
+              {[...teams].reverse().map((team) => (
                 <article key={team.id} className="rounded-[1.6rem] border border-white/10 bg-white/5 p-5">
                   <div className="flex items-start justify-between gap-3">
                     <div>

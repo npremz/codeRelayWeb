@@ -3,8 +3,11 @@ import "server-only";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { join } from "node:path";
+import { defaultRoundState } from "@/lib/demo-game";
 import {
+  AdminRoundAction,
   PublicTeam,
+  RoundControlState,
   TeamCreateInput,
   TeamCreateResponse,
   TeamMember,
@@ -35,7 +38,8 @@ type StoredTeam = {
 };
 
 type TeamStore = {
-  version: 1;
+  version: 2;
+  round: RoundControlState;
   teams: StoredTeam[];
 };
 
@@ -93,7 +97,11 @@ async function ensureStore() {
     await readFile(STORE_FILE, "utf8");
   } catch {
     const initialStore: TeamStore = {
-      version: 1,
+      version: 2,
+      round: {
+        ...defaultRoundState,
+        updatedAt: new Date().toISOString()
+      },
       teams: []
     };
 
@@ -101,10 +109,67 @@ async function ensureStore() {
   }
 }
 
+function createDefaultRoundState(): RoundControlState {
+  return {
+    ...defaultRoundState,
+    updatedAt: new Date().toISOString()
+  };
+}
+
+function normalizeRoundState(input: Partial<RoundControlState> | undefined): RoundControlState {
+  const base = createDefaultRoundState();
+
+  return {
+    registrationOpen: input?.registrationOpen ?? base.registrationOpen,
+    phase: input?.phase ?? base.phase,
+    previousPhase: input?.previousPhase ?? base.previousPhase,
+    phaseStartedAt: input?.phaseStartedAt ?? base.phaseStartedAt,
+    pausedElapsedMs: input?.pausedElapsedMs ?? base.pausedElapsedMs,
+    reflectionMs: input?.reflectionMs ?? base.reflectionMs,
+    relaySliceMs: input?.relaySliceMs ?? base.relaySliceMs,
+    totalRelaySlices: input?.totalRelaySlices ?? base.totalRelaySlices,
+    updatedAt: input?.updatedAt ?? base.updatedAt
+  };
+}
+
+function migrateStore(raw: unknown): TeamStore {
+  if (!raw || typeof raw !== "object") {
+    return {
+      version: 2,
+      round: createDefaultRoundState(),
+      teams: []
+    };
+  }
+
+  const candidate = raw as Partial<TeamStore> & { version?: number };
+
+  if (candidate.version === 2 && Array.isArray(candidate.teams)) {
+    return {
+      version: 2,
+      round: normalizeRoundState(candidate.round),
+      teams: candidate.teams
+    };
+  }
+
+  if (Array.isArray(candidate.teams)) {
+    return {
+      version: 2,
+      round: createDefaultRoundState(),
+      teams: candidate.teams
+    };
+  }
+
+  return {
+    version: 2,
+    round: createDefaultRoundState(),
+    teams: []
+  };
+}
+
 async function readStore(): Promise<TeamStore> {
   await ensureStore();
   const raw = await readFile(STORE_FILE, "utf8");
-  return JSON.parse(raw) as TeamStore;
+  return migrateStore(JSON.parse(raw));
 }
 
 async function writeStore(store: TeamStore) {
@@ -150,6 +215,11 @@ export async function listStoredTeams(): Promise<PublicTeam[]> {
     .map(toPublicTeam);
 }
 
+export async function getRoundState(): Promise<RoundControlState> {
+  const store = await readStore();
+  return store.round;
+}
+
 export async function getPublicTeam(teamCode: string): Promise<PublicTeam | null> {
   const store = await readStore();
   const team = findTeamByCode(store, teamCode);
@@ -158,6 +228,10 @@ export async function getPublicTeam(teamCode: string): Promise<PublicTeam | null
 
 export async function createTeam(input: TeamCreateInput): Promise<TeamCreateResponse> {
   return mutateStore(async (store) => {
+    if (!store.round.registrationOpen) {
+      throw new Error("Les inscriptions sont fermees.");
+    }
+
     const { name, members } = normalizeNames(input);
     const teamCode = generateTeamCode(new Set(store.teams.map((team) => team.teamCode)));
     const editToken = generateToken();
@@ -250,6 +324,135 @@ export async function updateTeamScore(teamCode: string, input: TeamScoreInput): 
     };
     team.status = "scored";
     team.updatedAt = new Date().toISOString();
+
+    return toPublicTeam(team);
+  });
+}
+
+function lockPendingTeams(store: TeamStore, locked: boolean) {
+  for (const team of store.teams) {
+    if (team.status !== "submitted" && team.status !== "scored") {
+      team.locked = locked;
+      if (!locked && team.status === "ready") {
+        team.status = "registered";
+      }
+    }
+  }
+}
+
+function getElapsedForPhase(round: RoundControlState, now: Date) {
+  if (!round.phaseStartedAt) {
+    return round.pausedElapsedMs ?? 0;
+  }
+
+  return Math.max(0, now.getTime() - new Date(round.phaseStartedAt).getTime());
+}
+
+export async function applyAdminRoundAction(action: AdminRoundAction): Promise<RoundControlState> {
+  return mutateStore(async (store) => {
+    const now = new Date();
+    const nowIso = now.toISOString();
+    const round = store.round;
+
+    switch (action) {
+      case "open_registration":
+        round.registrationOpen = true;
+        round.updatedAt = nowIso;
+        if (round.phase === "draft" || round.phase === "complete") {
+          lockPendingTeams(store, false);
+        }
+        break;
+      case "close_registration":
+        round.registrationOpen = false;
+        round.updatedAt = nowIso;
+        lockPendingTeams(store, true);
+        break;
+      case "start_reflection":
+        round.registrationOpen = false;
+        round.phase = "reflection";
+        round.previousPhase = null;
+        round.phaseStartedAt = nowIso;
+        round.pausedElapsedMs = null;
+        round.updatedAt = nowIso;
+        lockPendingTeams(store, true);
+        for (const team of store.teams) {
+          if (team.status !== "submitted" && team.status !== "scored") {
+            team.status = "ready";
+            team.submittedAt = null;
+            team.updatedAt = nowIso;
+          }
+        }
+        break;
+      case "start_relay":
+        round.registrationOpen = false;
+        round.phase = "relay";
+        round.previousPhase = null;
+        round.phaseStartedAt = nowIso;
+        round.pausedElapsedMs = null;
+        round.updatedAt = nowIso;
+        lockPendingTeams(store, true);
+        for (const team of store.teams) {
+          if (team.status !== "submitted" && team.status !== "scored") {
+            team.status = "coding";
+            team.updatedAt = nowIso;
+          }
+        }
+        break;
+      case "pause_round":
+        if (round.phase === "reflection" || round.phase === "relay") {
+          round.previousPhase = round.phase;
+          round.phase = "paused";
+          round.pausedElapsedMs = getElapsedForPhase(round, now);
+          round.phaseStartedAt = null;
+          round.updatedAt = nowIso;
+        }
+        break;
+      case "resume_round":
+        if (round.phase === "paused" && round.previousPhase) {
+          round.phase = round.previousPhase;
+          round.phaseStartedAt = new Date(now.getTime() - (round.pausedElapsedMs ?? 0)).toISOString();
+          round.pausedElapsedMs = null;
+          round.previousPhase = null;
+          round.updatedAt = nowIso;
+        }
+        break;
+      case "close_round":
+        round.registrationOpen = false;
+        round.phase = "complete";
+        round.previousPhase = null;
+        round.phaseStartedAt = null;
+        round.pausedElapsedMs = null;
+        round.updatedAt = nowIso;
+        lockPendingTeams(store, true);
+        break;
+      default:
+        break;
+    }
+
+    return round;
+  });
+}
+
+export async function markTeamSubmitted(teamCode: string): Promise<PublicTeam | null> {
+  return mutateStore(async (store) => {
+    const team = findTeamByCode(store, teamCode);
+
+    if (!team) {
+      return null;
+    }
+
+    const nowIso = new Date().toISOString();
+
+    if (!team.submittedAt) {
+      team.submittedAt = nowIso;
+    }
+
+    if (team.status !== "scored") {
+      team.status = "submitted";
+    }
+
+    team.locked = true;
+    team.updatedAt = nowIso;
 
     return toPublicTeam(team);
   });

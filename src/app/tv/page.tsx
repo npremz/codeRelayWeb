@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 
 export default function TvPage() {
   const [now, setNow] = useState(0);
-  const { teams: storedTeams, usingDemoData } = useLiveTeams();
+  const { teams: storedTeams, round } = useLiveTeams();
 
   useEffect(() => {
     setNow(Date.now());
@@ -14,7 +14,7 @@ export default function TvPage() {
     return () => window.clearInterval(interval);
   }, []);
 
-  const relayState = getRelayState(now);
+  const relayState = getRelayState(round, now);
   const teams = buildLiveTeams(storedTeams, relayState);
   const leader = teams[0];
 
@@ -41,19 +41,27 @@ export default function TvPage() {
           <div className="mt-6 grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
             <div className="rounded-[2rem] border border-lime/20 bg-lime/10 p-5">
               <p className="text-xs uppercase tracking-[0.24em] text-lime">Leader actuel</p>
-              <h2 className="mt-3 font-display text-6xl uppercase leading-none text-sand md:text-7xl">
-                {leader.name}
-              </h2>
-              <p className="mt-2 text-sm uppercase tracking-[0.18em] text-fog">
-                {leader.station} · {leader.teamCode ?? "NO-CODE"}
-              </p>
-              <p className="mt-8 font-display text-[5rem] leading-none text-lime">{leader.totalScore}</p>
-              <p className="mt-2 text-sm text-fog">
-                {leader.submissionOrder ? `Soumission #${leader.submissionOrder}` : "Toujours en course"}
-              </p>
-              <p className="mt-3 text-xs uppercase tracking-[0.18em] text-fog">
-                {usingDemoData ? "Mode demo" : "Donnees live du tournoi"}
-              </p>
+              {leader ? (
+                <>
+                  <h2 className="mt-3 font-display text-6xl uppercase leading-none text-sand md:text-7xl">
+                    {leader.name}
+                  </h2>
+                  <p className="mt-2 text-sm uppercase tracking-[0.18em] text-fog">
+                    {leader.station} · {leader.teamCode ?? "NO-CODE"}
+                  </p>
+                  <p className="mt-8 font-display text-[5rem] leading-none text-lime">{leader.totalScore}</p>
+                  <p className="mt-2 text-sm text-fog">
+                    {leader.submissionOrder ? `Soumission #${leader.submissionOrder}` : "Toujours en course"}
+                  </p>
+                  <p className="mt-3 text-xs uppercase tracking-[0.18em] text-fog">Donnees live du tournoi</p>
+                </>
+              ) : (
+                <>
+                  <h2 className="mt-3 font-display text-6xl uppercase leading-none text-sand md:text-7xl">En attente</h2>
+                  <p className="mt-2 text-sm uppercase tracking-[0.18em] text-fog">Aucune equipe classee</p>
+                  <p className="mt-8 text-sm text-fog">Le mur TV affichera le classement des que les equipes seront inscrites.</p>
+                </>
+              )}
             </div>
 
             <div className="grid gap-4">
@@ -100,6 +108,7 @@ export default function TvPage() {
           </div>
 
           <div className="mt-5 space-y-4">
+            {teams.length === 0 && <p className="text-sm text-fog">Aucune equipe inscrite pour le moment.</p>}
             {teams.map((team) => (
               <article key={team.id} className="rounded-[1.7rem] border border-white/10 bg-white/5 p-5">
                 <div className="flex items-center justify-between gap-3">

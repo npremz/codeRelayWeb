@@ -47,7 +47,8 @@ DATABASE_URL="postgresql://user:password@localhost:5432/code_relay"
 Le projet livre:
 
 - un design system pour l'univers "control room"
-- un store local de projet pour les equipes et les scores
+- un store local de projet pour les equipes, les scores et l'etat de manche
 - un flux participant sans login avec code d'equipe et token secret
 - un acces staff protege par code court pour `admin` et `judge`
+- des controles admin reels pour inscriptions, phases et soumissions
 - la structure necessaire pour brancher un backend temps reel ensuite

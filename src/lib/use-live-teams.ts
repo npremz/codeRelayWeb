@@ -1,24 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { PublicTeam } from "@/lib/game-types";
-import { demoTeams } from "@/lib/demo-game";
-
-function getDemoPublicTeams(): PublicTeam[] {
-  const now = new Date().toISOString();
-
-  return demoTeams.map((team, index) => ({
-    ...team,
-    teamCode: `DEMO${index + 1}`,
-    createdAt: now,
-    updatedAt: now,
-    locked: false
-  }));
-}
+import { LiveTeamsResponse, PublicTeam, RoundControlState } from "@/lib/game-types";
+import { defaultRoundState } from "@/lib/demo-game";
 
 export function useLiveTeams() {
-  const [teams, setTeams] = useState<PublicTeam[]>(() => getDemoPublicTeams());
-  const [usingDemoData, setUsingDemoData] = useState(true);
+  const [teams, setTeams] = useState<PublicTeam[]>([]);
+  const [round, setRound] = useState<RoundControlState>(defaultRoundState);
+  const [usingDemoData, setUsingDemoData] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -31,10 +20,11 @@ export function useLiveTeams() {
           return;
         }
 
-        const payload = (await response.json()) as { teams: PublicTeam[]; usingDemoData: boolean };
+        const payload = (await response.json()) as LiveTeamsResponse;
 
         if (!cancelled) {
           setTeams(payload.teams);
+          setRound(payload.round);
           setUsingDemoData(payload.usingDemoData);
         }
       } catch {
@@ -51,8 +41,27 @@ export function useLiveTeams() {
     };
   }, []);
 
+  async function refresh() {
+    try {
+      const response = await fetch("/api/live", { cache: "no-store" });
+
+      if (!response.ok) {
+        return;
+      }
+
+      const payload = (await response.json()) as LiveTeamsResponse;
+      setTeams(payload.teams);
+      setRound(payload.round);
+      setUsingDemoData(payload.usingDemoData);
+    } catch {
+      return;
+    }
+  }
+
   return {
     teams,
-    usingDemoData
+    round,
+    usingDemoData,
+    refresh
   };
 }

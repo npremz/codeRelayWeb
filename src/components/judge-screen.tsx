@@ -2,20 +2,23 @@
 
 import { AppFrame } from "@/components/app-frame";
 import { Panel } from "@/components/panel";
-import { scoreLabels } from "@/lib/demo-game";
+import { buildLiveTeams, getRelayState, scoreLabels } from "@/lib/demo-game";
 import { PublicTeam, ScoreCard, ScoreMetricKey, TeamScoreInput } from "@/lib/game-types";
 import { useLiveTeams } from "@/lib/use-live-teams";
 import { ChangeEvent, useEffect, useMemo, useState } from "react";
 
 type JudgeScores = Record<string, ScoreCard>;
 
-function buildInitialScores(teams: PublicTeam[]): JudgeScores {
+function buildInitialScores(
+  teams: PublicTeam[],
+  speedBonusByTeamId: Map<string, number>
+): JudgeScores {
   return Object.fromEntries(
     teams.map((team) => [
       team.id,
       {
         ...team.score,
-        speedBonus: 0,
+        speedBonus: speedBonusByTeamId.get(team.id) ?? 0,
         notes: team.score.notes ?? ""
       }
     ])
@@ -27,7 +30,8 @@ type JudgeScreenProps = {
 };
 
 export function JudgeScreen({ staffRole }: JudgeScreenProps) {
-  const { teams, usingDemoData } = useLiveTeams();
+  const [now, setNow] = useState(0);
+  const { teams, round, usingDemoData, refresh } = useLiveTeams();
   const [selectedTeamId, setSelectedTeamId] = useState("");
   const [scores, setScores] = useState<JudgeScores>({});
   const [saving, setSaving] = useState(false);
@@ -35,17 +39,27 @@ export function JudgeScreen({ staffRole }: JudgeScreenProps) {
   const editableCriteria = scoreLabels.filter((criterion) => criterion.key !== "speedBonus");
 
   useEffect(() => {
+    setNow(Date.now());
+    const interval = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(interval);
+  }, []);
+
+  const liveTeams = buildLiveTeams(teams, getRelayState(round, now));
+  const liveTeamsMap = new Map(liveTeams.map((team) => [team.id, team]));
+  const speedBonusByTeamId = new Map(liveTeams.map((team) => [team.id, team.scoreCard.speedBonus]));
+
+  useEffect(() => {
     if (teams.length === 0) {
       return;
     }
 
-    const freshScores = buildInitialScores(teams);
+    const freshScores = buildInitialScores(teams, speedBonusByTeamId);
     setScores((current) => ({
       ...freshScores,
       ...current
     }));
     setSelectedTeamId((current) => (teams.some((team) => team.id === current) ? current : teams[0].id));
-  }, [teams]);
+  }, [teams, now, round]);
 
   const selectedTeam = teams.find((team) => team.id === selectedTeamId) ?? teams[0];
 
@@ -53,7 +67,7 @@ export function JudgeScreen({ staffRole }: JudgeScreenProps) {
     return (
       <AppFrame
         title="Judge"
-        subtitle="Judge cockpit aligned with the official rubric. Create a team first or keep the demo data active."
+        subtitle="Judge cockpit aligned with the official rubric. Create a team first or keep the store live."
       >
         <Panel eyebrow="Queue" title="No Teams">
           <p className="text-sm text-fog">Aucune equipe disponible pour correction.</p>
@@ -62,9 +76,10 @@ export function JudgeScreen({ staffRole }: JudgeScreenProps) {
     );
   }
 
+  const selectedSpeedBonus = speedBonusByTeamId.get(selectedTeam.id) ?? 0;
   const selectedScore = scores[selectedTeam.id] ?? {
     ...selectedTeam.score,
-    speedBonus: 0,
+    speedBonus: selectedSpeedBonus,
     notes: selectedTeam.score.notes ?? ""
   };
 
@@ -74,8 +89,8 @@ export function JudgeScreen({ staffRole }: JudgeScreenProps) {
       selectedScore.edgeCases +
       selectedScore.complexity +
       selectedScore.readability +
-      selectedScore.speedBonus,
-    [selectedScore]
+      selectedSpeedBonus,
+    [selectedScore, selectedSpeedBonus]
   );
 
   function updateScore(key: keyof ScoreCard, value: number | string) {
@@ -122,6 +137,7 @@ export function JudgeScreen({ staffRole }: JudgeScreenProps) {
         throw new Error(data.error ?? "Impossible d'enregistrer la note.");
       }
 
+      await refresh();
       setMessage("Evaluation enregistree.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Impossible d'enregistrer la note.");
@@ -159,7 +175,7 @@ export function JudgeScreen({ staffRole }: JudgeScreenProps) {
                 teamScore.edgeCases +
                 teamScore.complexity +
                 teamScore.readability +
-                teamScore.speedBonus;
+                (speedBonusByTeamId.get(team.id) ?? teamScore.speedBonus);
 
               return (
                 <button
@@ -208,7 +224,7 @@ export function JudgeScreen({ staffRole }: JudgeScreenProps) {
                     <span className="text-xs uppercase tracking-[0.2em] text-fog">Rapidite</span>
                     <span className="text-xs uppercase tracking-[0.2em] text-fog">Auto</span>
                   </div>
-                  <p className="mt-2 text-2xl text-sand">{selectedScore.speedBonus}</p>
+                  <p className="mt-2 text-2xl text-sand">{selectedSpeedBonus}</p>
                 </div>
                 <label className="block">
                   <span className="mb-2 block text-xs uppercase tracking-[0.2em] text-fog">Notes jury</span>
@@ -235,6 +251,11 @@ export function JudgeScreen({ staffRole }: JudgeScreenProps) {
                 <p className="mt-2 text-sm">
                   Departage: correction, puis edge cases, puis complexite, puis ordre de soumission.
                 </p>
+                <div className="mt-4 rounded-[1.1rem] border border-lime/20 bg-black/15 p-3 text-sm">
+                  {selectedTeam.submittedAt
+                    ? `Soumise le ${new Date(selectedTeam.submittedAt).toLocaleString("fr-BE")}`
+                    : "Soumission non marquee par l'organisateur"}
+                </div>
                 <div className="mt-6 grid gap-3 text-sm">
                   {selectedTeam.members.map((member) => (
                     <div key={member.id} className="rounded-[1.1rem] border border-lime/20 bg-black/15 p-3">
@@ -254,7 +275,7 @@ export function JudgeScreen({ staffRole }: JudgeScreenProps) {
               </div>
               <div className="rounded-[1.5rem] border border-white/10 bg-white/5 p-4 text-sm text-fog">
                 <p className="text-xs uppercase tracking-[0.2em] text-signal">Edge Cases / 20</p>
-                <p className="mt-2">Entrées vides, tailles minimales, doublons, valeurs negatives, cas impossibles.</p>
+                <p className="mt-2">Entrees vides, tailles minimales, doublons, valeurs negatives, cas impossibles.</p>
               </div>
               <div className="rounded-[1.5rem] border border-white/10 bg-white/5 p-4 text-sm text-fog">
                 <p className="text-xs uppercase tracking-[0.2em] text-signal">Complexite / 20</p>

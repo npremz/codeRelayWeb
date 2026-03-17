@@ -15,6 +15,14 @@ export function RankingTable({
   eyebrow = "Leaderboard",
   compact = false
 }: RankingTableProps) {
+  if (teams.length === 0) {
+    return (
+      <Panel eyebrow={eyebrow} title={title}>
+        <p className="text-sm text-fog">Aucune equipe classee pour le moment.</p>
+      </Panel>
+    );
+  }
+
   return (
     <Panel eyebrow={eyebrow} title={title}>
       <div className="overflow-hidden rounded-[1.8rem] border border-white/10">
@@ -33,8 +41,10 @@ export function RankingTable({
               <tr key={team.id} className="border-t border-white/10 text-sm text-sand">
                 <td className="px-4 py-4 font-display text-3xl">{team.rank}</td>
                 <td className="px-4 py-4">
-                  <p className="font-semibold uppercase tracking-[0.12em]">{team.name}</p>
-                  <p className="mt-1 text-xs uppercase tracking-[0.18em] text-fog">{team.station}</p>
+                        <p className="font-semibold uppercase tracking-[0.12em]">{team.name}</p>
+                  <p className="mt-1 text-xs uppercase tracking-[0.18em] text-fog">
+                    {team.station} · {team.teamCode ?? "NO-CODE"}
+                  </p>
                 </td>
                 <td className="px-4 py-4 text-fog">{getStatusLabel(team.status)}</td>
                 <td className="px-4 py-4">

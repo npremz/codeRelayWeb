@@ -11,7 +11,7 @@ import { useEffect, useState } from "react";
 
 export default function HomePage() {
   const [now, setNow] = useState(0);
-  const { teams: storedTeams, usingDemoData } = useLiveTeams();
+  const { teams: storedTeams, round } = useLiveTeams();
 
   useEffect(() => {
     setNow(Date.now());
@@ -19,7 +19,7 @@ export default function HomePage() {
     return () => window.clearInterval(interval);
   }, []);
 
-  const relayState = getRelayState(now);
+  const relayState = getRelayState(round, now);
   const teams = buildLiveTeams(storedTeams, relayState);
 
   return (
@@ -50,10 +50,10 @@ export default function HomePage() {
           </div>
         </div>
         <div className="grid gap-6">
-          <Panel eyebrow="Data Source" title={usingDemoData ? "Demo Mode" : "Live Store"}>
+          <Panel eyebrow="Data Source" title="Live Store">
             <p className="text-sm text-fog">
-              {usingDemoData
-                ? "Aucune equipe enregistree pour l'instant. Les ecrans affichent le jeu de demonstration."
+              {storedTeams.length === 0
+                ? "Aucune equipe enregistree pour l'instant. Le tournoi attend encore ses inscriptions."
                 : `${storedTeams.length} equipe(s) enregistree(s) dans le store local du projet.`}
             </p>
           </Panel>

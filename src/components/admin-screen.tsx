@@ -3,7 +3,8 @@
 import { AppFrame } from "@/components/app-frame";
 import { Panel } from "@/components/panel";
 import { PhaseTimer } from "@/components/phase-timer";
-import { buildLiveTeams, getRelayState, getStatusLabel } from "@/lib/demo-game";
+import { AdminRoundAction } from "@/lib/game-types";
+import { buildLiveTeams, getRelayState, getRoundActionLabel, getStatusLabel } from "@/lib/demo-game";
 import { useLiveTeams } from "@/lib/use-live-teams";
 import { useEffect, useState } from "react";
 
@@ -13,7 +14,9 @@ type AdminScreenProps = {
 
 export function AdminScreen({ staffRole }: AdminScreenProps) {
   const [now, setNow] = useState(0);
-  const { teams: storedTeams, usingDemoData } = useLiveTeams();
+  const [busyAction, setBusyAction] = useState<string | null>(null);
+  const [message, setMessage] = useState("");
+  const { teams: storedTeams, round, refresh } = useLiveTeams();
 
   useEffect(() => {
     setNow(Date.now());
@@ -21,8 +24,70 @@ export function AdminScreen({ staffRole }: AdminScreenProps) {
     return () => window.clearInterval(interval);
   }, []);
 
-  const relayState = getRelayState(now);
+  const relayState = getRelayState(round, now);
   const teams = buildLiveTeams(storedTeams, relayState);
+
+  const actions: Array<{ id: AdminRoundAction; label: string }> = [
+    { id: "open_registration", label: "Open Registration" },
+    { id: "close_registration", label: "Close Registration" },
+    { id: "start_reflection", label: "Start Reflection" },
+    { id: "start_relay", label: "Start Relay" },
+    { id: "pause_round", label: "Pause Round" },
+    { id: "resume_round", label: "Resume Round" },
+    { id: "close_round", label: "Close Round" }
+  ];
+
+  async function runRoundAction(action: AdminRoundAction) {
+    setBusyAction(action);
+    setMessage("");
+
+    try {
+      const response = await fetch("/api/admin/round", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ action })
+      });
+
+      const payload = (await response.json()) as { error?: string };
+
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Action admin impossible.");
+      }
+
+      await refresh();
+      setMessage("Etat de manche mis a jour.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Action admin impossible.");
+    } finally {
+      setBusyAction(null);
+    }
+  }
+
+  async function markSubmitted(teamCode: string) {
+    setBusyAction(teamCode);
+    setMessage("");
+
+    try {
+      const response = await fetch(`/api/admin/submissions/${teamCode}`, {
+        method: "POST"
+      });
+
+      const payload = (await response.json()) as { error?: string };
+
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Impossible de marquer la soumission.");
+      }
+
+      await refresh();
+      setMessage("Soumission enregistree.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Impossible de marquer la soumission.");
+    } finally {
+      setBusyAction(null);
+    }
+  }
 
   return (
     <AppFrame
@@ -35,28 +100,36 @@ export function AdminScreen({ staffRole }: AdminScreenProps) {
             <p className="text-sm text-fog">
               Role actif: <span className="text-sand">{staffRole}</span>. Cette surface est protegee par code staff.
             </p>
+            <p className="mt-2 text-sm text-fog">
+              Phase: <span className="text-sand">{getRoundActionLabel(round.phase)}</span> · Inscriptions{" "}
+              <span className="text-sand">{round.registrationOpen ? "ouvertes" : "fermees"}</span>
+            </p>
           </Panel>
           <PhaseTimer state={relayState} />
           <Panel eyebrow="Round Controls" title="Operator Actions">
             <div className="grid gap-3 md:grid-cols-2">
-              {[
-                "Open registration",
-                "Start reflection",
-                "Launch relay",
-                "Pause round",
-                "Mark submission",
-                "Close round"
-              ].map((action) => (
-                <button key={action} className="ghost-button text-left">
-                  {action}
+              {actions.map((action) => (
+                <button
+                  key={action.id}
+                  className="ghost-button text-left"
+                  disabled={busyAction !== null}
+                  onClick={() => runRoundAction(action.id)}
+                  type="button"
+                >
+                  {busyAction === action.id ? "Processing..." : action.label}
                 </button>
               ))}
             </div>
-            <p className="mt-4 text-sm text-fog">
-              In the final backend version, these buttons will mutate the round state and broadcast updates to TV and judge screens.
+            {message && (
+              <p className={`mt-4 text-sm ${message.includes("impossible") || message.includes("requise") ? "text-signal" : "text-lime"}`}>
+                {message}
+              </p>
+            )}
+            <p className="mt-2 text-sm text-fog">
+              Les actions modifient le store de manche et se propagent aux autres ecrans via `/api/live`.
             </p>
             <p className="mt-2 text-sm text-fog">
-              Source actuelle: {usingDemoData ? "jeu de demonstration" : `${storedTeams.length} equipe(s) stockee(s)`}.
+              {storedTeams.length} equipe(s) stockee(s) dans le tournoi.
             </p>
           </Panel>
         </div>
@@ -80,6 +153,14 @@ export function AdminScreen({ staffRole }: AdminScreenProps) {
                       <span className="rounded-full border border-signal/30 bg-signal/10 px-3 py-1 text-xs uppercase tracking-[0.18em] text-signal">
                         {team.activeMember ? `Clavier: ${team.activeMember.name}` : "Aucun joueur actif"}
                       </span>
+                      <button
+                        className="ghost-button px-4 py-2 text-xs"
+                        disabled={team.submissionOrder !== null || busyAction !== null}
+                        onClick={() => markSubmitted(team.teamCode ?? "")}
+                        type="button"
+                      >
+                        {busyAction === team.teamCode ? "Processing..." : team.submissionOrder !== null ? `Soumise #${team.submissionOrder}` : "Mark Submission"}
+                      </button>
                     </div>
                   </div>
                   <div className="mt-4 grid gap-3 md:grid-cols-3">
@@ -107,7 +188,7 @@ export function AdminScreen({ staffRole }: AdminScreenProps) {
               <li>Verifier le silence total autour du joueur au clavier pendant son tour.</li>
               <li>La rotation ne peut jamais etre sautee, meme si un joueur pense aller plus vite.</li>
               <li>Les notes papier preparees pendant les 5 minutes sont autorisees, rien d'autre.</li>
-              <li>Le bonus vitesse est assigne automatiquement a la soumission officielle.</li>
+              <li>Le bonus vitesse est assigne automatiquement a l'ordre reel de soumission.</li>
             </ul>
           </Panel>
         </div>

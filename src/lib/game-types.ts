@@ -1,4 +1,6 @@
-export type RelayPhase = "reflection" | "relay";
+export type ResumeRoundPhase = "reflection" | "relay";
+
+export type RoundPhase = "draft" | ResumeRoundPhase | "paused" | "complete";
 
 export type TeamStatus = "registered" | "ready" | "coding" | "submitted" | "scored";
 
@@ -52,14 +54,28 @@ export type LiveTeam = TeamSeed & {
   scoreCard: ScoreCard;
 };
 
+export type RoundControlState = {
+  registrationOpen: boolean;
+  phase: RoundPhase;
+  previousPhase: ResumeRoundPhase | null;
+  phaseStartedAt: string | null;
+  pausedElapsedMs: number | null;
+  reflectionMs: number;
+  relaySliceMs: number;
+  totalRelaySlices: number;
+  updatedAt: string;
+};
+
 export type RelayState = {
-  phase: RelayPhase;
+  phase: RoundPhase;
   elapsedMs: number;
   remainingMs: number;
   totalMs: number;
   currentSlice: number;
   activeRelayOrder: number | null;
   phaseLabel: string;
+  progress: number;
+  isRunning: boolean;
 };
 
 export type TeamCreateInput = {
@@ -87,5 +103,15 @@ export type TeamCreateResponse = {
 
 export type LiveTeamsResponse = {
   teams: PublicTeam[];
+  round: RoundControlState;
   usingDemoData: boolean;
 };
+
+export type AdminRoundAction =
+  | "open_registration"
+  | "close_registration"
+  | "start_reflection"
+  | "start_relay"
+  | "pause_round"
+  | "resume_round"
+  | "close_round";

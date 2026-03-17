@@ -1,4 +1,15 @@
 {
-  "version": 1,
+  "version": 2,
+  "round": {
+    "registrationOpen": true,
+    "phase": "draft",
+    "previousPhase": null,
+    "phaseStartedAt": null,
+    "pausedElapsedMs": null,
+    "reflectionMs": 300000,
+    "relaySliceMs": 120000,
+    "totalRelaySlices": 12,
+    "updatedAt": ""
+  },
   "teams": []
 }

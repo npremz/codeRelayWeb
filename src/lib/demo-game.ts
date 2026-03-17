@@ -1,11 +1,22 @@
-import { LiveTeam, RelayState, ScoreCard, ScoreMetricKey, TeamSeed } from "@/lib/game-types";
+import { LiveTeam, RelayState, RoundControlState, ScoreCard, ScoreMetricKey, TeamSeed } from "@/lib/game-types";
 
 type RankComparableTeam = Pick<LiveTeam, "totalScore" | "scoreCard" | "submissionOrder">;
 
 export const REFLECTION_MS = 5 * 60 * 1000;
 export const RELAY_SLICE_MS = 2 * 60 * 1000;
 export const RELAY_SLICES = 12;
-export const TOTAL_GAME_MS = REFLECTION_MS + RELAY_SLICE_MS * RELAY_SLICES;
+
+export const defaultRoundState: RoundControlState = {
+  registrationOpen: true,
+  phase: "draft",
+  previousPhase: null,
+  phaseStartedAt: null,
+  pausedElapsedMs: null,
+  reflectionMs: REFLECTION_MS,
+  relaySliceMs: RELAY_SLICE_MS,
+  totalRelaySlices: RELAY_SLICES,
+  updatedAt: ""
+};
 
 export const scoreLabels: Array<{ key: ScoreMetricKey; label: string; max: number }> = [
   { key: "correction", label: "Correction", max: 40 },
@@ -90,32 +101,76 @@ export const demoTeams: TeamSeed[] = [
   }
 ];
 
-export function getRelayState(now = Date.now()): RelayState {
-  const elapsedMs = now % TOTAL_GAME_MS;
+export function getRelayState(round: RoundControlState, now = Date.now()): RelayState {
+  const reflectionMs = round.reflectionMs;
+  const relayTotalMs = round.relaySliceMs * round.totalRelaySlices;
 
-  if (elapsedMs < REFLECTION_MS) {
+  if (round.phase === "draft") {
     return {
-      phase: "reflection",
-      elapsedMs,
-      remainingMs: REFLECTION_MS - elapsedMs,
-      totalMs: REFLECTION_MS,
+      phase: "draft",
+      elapsedMs: 0,
+      remainingMs: reflectionMs,
+      totalMs: reflectionMs,
       currentSlice: 0,
       activeRelayOrder: null,
-      phaseLabel: "Phase de reflexion"
+      phaseLabel: round.registrationOpen ? "Inscriptions ouvertes" : "Inscriptions fermees",
+      progress: 0,
+      isRunning: false
     };
   }
 
-  const relayElapsedMs = elapsedMs - REFLECTION_MS;
-  const currentSlice = Math.floor(relayElapsedMs / RELAY_SLICE_MS);
+  if (round.phase === "complete") {
+    return {
+      phase: "complete",
+      elapsedMs: relayTotalMs,
+      remainingMs: 0,
+      totalMs: relayTotalMs,
+      currentSlice: Math.max(round.totalRelaySlices - 1, 0),
+      activeRelayOrder: null,
+      phaseLabel: "Manche terminee",
+      progress: 100,
+      isRunning: false
+    };
+  }
+
+  const elapsedMs =
+    round.phaseStartedAt && round.phase !== "paused"
+      ? Math.max(0, now - new Date(round.phaseStartedAt).getTime())
+      : round.pausedElapsedMs ?? 0;
+
+  if (round.phase === "reflection" || (round.phase === "paused" && round.previousPhase === "reflection")) {
+    const boundedElapsedMs = Math.min(elapsedMs, reflectionMs);
+
+    return {
+      phase: round.phase,
+      elapsedMs: boundedElapsedMs,
+      remainingMs: Math.max(reflectionMs - boundedElapsedMs, 0),
+      totalMs: reflectionMs,
+      currentSlice: 0,
+      activeRelayOrder: null,
+      phaseLabel: round.phase === "paused" ? "Pause pendant reflexion" : "Phase de reflexion",
+      progress: reflectionMs === 0 ? 0 : Math.round((boundedElapsedMs / reflectionMs) * 100),
+      isRunning: round.phase !== "paused"
+    };
+  }
+
+  const boundedElapsedMs = Math.min(elapsedMs, relayTotalMs);
+  const currentSlice = Math.min(
+    Math.floor(boundedElapsedMs / round.relaySliceMs),
+    Math.max(round.totalRelaySlices - 1, 0)
+  );
+  const sliceElapsedMs = boundedElapsedMs % round.relaySliceMs;
 
   return {
-    phase: "relay",
-    elapsedMs: relayElapsedMs,
-    remainingMs: RELAY_SLICE_MS - (relayElapsedMs % RELAY_SLICE_MS),
-    totalMs: RELAY_SLICES * RELAY_SLICE_MS,
+    phase: round.phase,
+    elapsedMs: boundedElapsedMs,
+    remainingMs: Math.max(round.relaySliceMs - sliceElapsedMs, 0),
+    totalMs: relayTotalMs,
     currentSlice,
     activeRelayOrder: (currentSlice % 3) + 1,
-    phaseLabel: "Codage relais"
+    phaseLabel: round.phase === "paused" ? "Pause pendant relais" : "Codage relais",
+    progress: relayTotalMs === 0 ? 0 : Math.round((boundedElapsedMs / relayTotalMs) * 100),
+    isRunning: round.phase !== "paused"
   };
 }
 
@@ -190,34 +245,36 @@ export function buildLiveTeams(seeds: TeamSeed[], state: RelayState): LiveTeam[]
     const submissionIndex = submittedTeamIds.indexOf(team.id);
     const submissionOrder = submissionIndex >= 0 ? submissionIndex + 1 : null;
     const activeMember =
-      state.phase === "relay" && submissionOrder === null
+      (state.phase === "relay" || (state.phase === "paused" && state.activeRelayOrder !== null)) && submissionOrder === null
         ? team.members.find((member) => member.relayOrder === state.activeRelayOrder) ?? null
         : null;
     const progress =
       submissionOrder !== null
         ? 100
-        : state.phase === "reflection"
-        ? Math.round((state.elapsedMs / REFLECTION_MS) * 100)
-        : Math.min(
-            100,
-            Math.round(((state.currentSlice + 1) / RELAY_SLICES) * 100)
-          );
+        : state.phase === "draft"
+          ? 0
+          : state.phase === "complete"
+            ? 100
+            : state.progress;
     const speedBonus = getSpeedBonus(submissionOrder);
     const scoreCard: ScoreCard = {
       ...team.score,
       speedBonus
     };
+    const computedStatus =
+      team.status === "scored"
+        ? "scored"
+        : submissionOrder !== null
+          ? "submitted"
+          : state.phase === "draft" || state.phase === "complete"
+            ? team.status
+            : state.phase === "reflection" || (state.phase === "paused" && state.activeRelayOrder === null)
+              ? "ready"
+              : "coding";
 
     return {
       ...team,
-      status:
-        team.status === "scored"
-          ? "scored"
-          : submissionOrder !== null
-          ? "submitted"
-          : state.phase === "reflection"
-            ? "ready"
-            : "coding",
+      status: computedStatus,
       activeMember,
       totalScore:
         scoreCard.correction +
@@ -264,5 +321,22 @@ export function getStatusLabel(status: LiveTeam["status"]): string {
       return "Corrigee";
     default:
       return status;
+  }
+}
+
+export function getRoundActionLabel(phase: RoundControlState["phase"]): string {
+  switch (phase) {
+    case "draft":
+      return "Attente";
+    case "reflection":
+      return "Reflexion";
+    case "relay":
+      return "Relais";
+    case "paused":
+      return "Pause";
+    case "complete":
+      return "Terminee";
+    default:
+      return phase;
   }
 }
