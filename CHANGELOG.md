@@ -21,3 +21,18 @@ Toutes les evolutions notables du projet `Code Relay` sont documentees ici.
 ### Verified
 - `npm run build`
 - `npm audit`
+
+## [0.3.0] - 2026-03-17
+
+### Added
+- Ecran `/staff` pour l'acces staff par code court.
+- Session staff signee en cookie HttpOnly.
+- Variables d'environnement documentees dans `.env.example`.
+- Wrappers serveur pour proteger les surfaces `admin` et `judge`.
+
+### Changed
+- L'API de scoring exige desormais une session staff valide.
+- Les ecrans `admin` et `judge` affichent le contexte de session staff courant.
+
+### Verified
+- `npm run build`

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { TeamScoreInput } from "@/lib/game-types";
+import { getStaffSession } from "@/lib/staff-auth";
 import { updateTeamScore } from "@/lib/team-store";
 
 export const dynamic = "force-dynamic";
@@ -11,6 +12,12 @@ type Context = {
 };
 
 export async function PUT(request: NextRequest, context: Context) {
+  const session = await getStaffSession();
+
+  if (!session) {
+    return NextResponse.json({ error: "Session staff requise." }, { status: 401 });
+  }
+
   const { teamCode } = await context.params;
 
   try {
