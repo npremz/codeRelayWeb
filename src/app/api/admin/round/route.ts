@@ -29,14 +29,21 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Session admin requise." }, { status: 401 });
   }
 
-  const body = (await request.json()) as RoundActionBody;
+  try {
+    const body = (await request.json()) as RoundActionBody;
 
-  if (!body.action) {
-    return NextResponse.json({ error: "Action admin manquante." }, { status: 400 });
+    if (!body.action) {
+      return NextResponse.json({ error: "Action admin manquante." }, { status: 400 });
+    }
+
+    const round = await applyAdminRoundAction(body.action);
+    const currentRound = await getCurrentRoundSummary();
+
+    return NextResponse.json({ round, currentRound });
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Action admin impossible." },
+      { status: 400 }
+    );
   }
-
-  const round = await applyAdminRoundAction(body.action);
-  const currentRound = await getCurrentRoundSummary();
-
-  return NextResponse.json({ round, currentRound });
 }

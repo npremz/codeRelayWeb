@@ -8,7 +8,7 @@ import {
   Team as PrismaTeam,
   TeamStatus as PrismaTeamStatus
 } from "@prisma/client";
-import { defaultRoundState } from "@/lib/demo-game";
+import { canAdminMarkSubmission, canRunAdminRoundAction, defaultRoundState } from "@/lib/demo-game";
 import { prisma } from "@/lib/prisma";
 import {
   AdminCreateRoundInput,
@@ -687,6 +687,11 @@ export async function applyAdminRoundAction(action: AdminRoundAction): Promise<R
   const round = await prisma.$transaction(async (tx) => {
     const currentRound = await ensureCurrentRound(tx);
     const now = new Date();
+    const currentRoundState = toRoundState(currentRound);
+
+    if (!canRunAdminRoundAction(currentRoundState, action)) {
+      throw new Error("Action admin invalide pour l'etat actuel de la manche.");
+    }
 
     switch (action) {
       case "open_registration":
@@ -828,6 +833,12 @@ export async function applyAdminRoundAction(action: AdminRoundAction): Promise<R
 
 export async function markTeamSubmitted(teamCode: string): Promise<PublicTeam | null> {
   return prisma.$transaction(async (tx) => {
+    const currentRound = await ensureCurrentRound(tx);
+
+    if (!canAdminMarkSubmission(toRoundState(currentRound))) {
+      throw new Error("La soumission ne peut etre marquee que pendant ou apres le relais.");
+    }
+
     const entry = await findCurrentEntryByTeamCode(tx, teamCode);
 
     if (!entry) {

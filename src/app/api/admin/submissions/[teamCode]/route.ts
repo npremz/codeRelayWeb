@@ -20,12 +20,19 @@ export async function POST(_request: NextRequest, context: Context) {
     return NextResponse.json({ error: "Session admin requise." }, { status: 401 });
   }
 
-  const { teamCode } = await context.params;
-  const team = await markTeamSubmitted(teamCode);
+  try {
+    const { teamCode } = await context.params;
+    const team = await markTeamSubmitted(teamCode);
 
-  if (!team) {
-    return NextResponse.json({ error: "Equipe introuvable." }, { status: 404 });
+    if (!team) {
+      return NextResponse.json({ error: "Equipe introuvable." }, { status: 404 });
+    }
+
+    return NextResponse.json({ team });
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Impossible de marquer la soumission." },
+      { status: 400 }
+    );
   }
-
-  return NextResponse.json({ team });
 }

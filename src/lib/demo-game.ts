@@ -1,4 +1,12 @@
-import { LiveTeam, RelayState, RoundControlState, ScoreCard, ScoreMetricKey, TeamSeed } from "@/lib/game-types";
+import {
+  AdminRoundAction,
+  LiveTeam,
+  RelayState,
+  RoundControlState,
+  ScoreCard,
+  ScoreMetricKey,
+  TeamSeed
+} from "@/lib/game-types";
 
 type RankComparableTeam = Pick<LiveTeam, "totalScore" | "scoreCard" | "submissionOrder">;
 
@@ -100,6 +108,35 @@ export const demoTeams: TeamSeed[] = [
     }
   }
 ];
+
+export function canRunAdminRoundAction(round: RoundControlState, action: AdminRoundAction): boolean {
+  switch (action) {
+    case "open_registration":
+      return !round.registrationOpen && (round.phase === "draft" || round.phase === "complete");
+    case "close_registration":
+      return round.registrationOpen;
+    case "start_reflection":
+      return round.phase === "draft";
+    case "start_relay":
+      return round.phase === "draft" || round.phase === "reflection";
+    case "pause_round":
+      return round.phase === "reflection" || round.phase === "relay";
+    case "resume_round":
+      return round.phase === "paused";
+    case "close_round":
+      return round.phase !== "complete";
+    default:
+      return false;
+  }
+}
+
+export function canAdminMarkSubmission(round: RoundControlState): boolean {
+  return (
+    round.phase === "relay" ||
+    round.phase === "complete" ||
+    (round.phase === "paused" && round.previousPhase === "relay")
+  );
+}
 
 export function getRelayState(round: RoundControlState, now = Date.now()): RelayState {
   const reflectionMs = round.reflectionMs;

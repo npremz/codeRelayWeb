@@ -5,7 +5,14 @@ import { LiveNotificationBanner } from "@/components/live-notification-banner";
 import { Panel } from "@/components/panel";
 import { PhaseTimer } from "@/components/phase-timer";
 import { AdminRoundAction, RoundSummary } from "@/lib/game-types";
-import { buildLiveTeams, getRelayState, getRoundActionLabel, getStatusLabel } from "@/lib/demo-game";
+import {
+  buildLiveTeams,
+  canAdminMarkSubmission,
+  canRunAdminRoundAction,
+  getRelayState,
+  getRoundActionLabel,
+  getStatusLabel
+} from "@/lib/demo-game";
 import { useRoundNotifications } from "@/lib/use-round-notifications";
 import { useLiveTeams } from "@/lib/use-live-teams";
 import { useEffect, useState } from "react";
@@ -115,11 +122,10 @@ export function AdminScreen({ staffRole }: AdminScreenProps) {
     setMessage("");
 
     try {
-      const response = await fetch("/api/admin/round", {
+      const response = await fetch("/api/admin/rounds", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          action: "create_round",
           name: newRoundName.trim() || undefined,
           cloneTeams,
           makeCurrent
@@ -150,11 +156,10 @@ export function AdminScreen({ staffRole }: AdminScreenProps) {
     setMessage("");
 
     try {
-      const response = await fetch("/api/admin/round", {
-        method: "POST",
+      const response = await fetch("/api/admin/rounds/current", {
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          action: "select_round",
           roundId
         })
       });
@@ -378,11 +383,12 @@ export function AdminScreen({ staffRole }: AdminScreenProps) {
             <div className="grid gap-3 sm:grid-cols-2">
               {actions.map((action) => {
                 const config = actionConfig[action];
+                const isAllowed = canRunAdminRoundAction(round, action);
                 return (
                   <button
                     key={action}
                     className="group flex items-center gap-3 rounded-xl border border-border bg-elevated/50 px-4 py-4 text-left transition-all hover:border-border-hover hover:bg-elevated disabled:opacity-40 disabled:cursor-not-allowed"
-                    disabled={busyAction !== null}
+                    disabled={busyAction !== null || !isAllowed}
                     onClick={() => runRoundAction(action)}
                     type="button"
                   >
@@ -436,6 +442,7 @@ export function AdminScreen({ staffRole }: AdminScreenProps) {
             <div className="space-y-4">
               {teams.map((team) => {
                 const statusLabel = getStatusLabel(team.status);
+                const canMarkTeamSubmitted = canAdminMarkSubmission(round) && team.submissionOrder === null;
                 return (
                   <article
                     key={team.id}
@@ -479,7 +486,7 @@ export function AdminScreen({ staffRole }: AdminScreenProps) {
                               ? "border-success/20 bg-success/10 text-success cursor-default"
                               : "border-accent/20 bg-accent/10 text-accent-light hover:bg-accent/20 disabled:opacity-40 disabled:cursor-not-allowed"
                           }`}
-                          disabled={team.submissionOrder !== null || busyAction !== null}
+                          disabled={!canMarkTeamSubmitted || busyAction !== null}
                           onClick={() => markSubmitted(team.teamCode ?? "")}
                           type="button"
                         >
