@@ -1,28 +1,28 @@
 import type { Metadata } from "next";
-import { Bebas_Neue, IBM_Plex_Mono } from "next/font/google";
+import { Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
-const displayFont = Bebas_Neue({
+const displayFont = Space_Grotesk({
   variable: "--font-display",
   subsets: ["latin"],
-  weight: "400"
+  weight: ["400", "500", "600", "700"]
 });
 
-const bodyFont = IBM_Plex_Mono({
+const bodyFont = JetBrains_Mono({
   variable: "--font-body",
   subsets: ["latin"],
-  weight: ["400", "500", "600"]
+  weight: ["400", "500", "600", "700"]
 });
 
 export const metadata: Metadata = {
   title: "Code Relay",
-  description: "Control room for Code Relay tournaments"
+  description: "Tournoi de programmation en relais"
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="fr">
-      <body className={`${displayFont.variable} ${bodyFont.variable}`}>{children}</body>
+      <body className={`${displayFont.variable} ${bodyFont.variable} mb-16`}>{children}</body>
     </html>
   );
 }

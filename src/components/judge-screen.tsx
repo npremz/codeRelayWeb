@@ -6,6 +6,7 @@ import { buildLiveTeams, formatTieBreakTuple, getRelayState, scoreLabels } from 
 import { PublicTeam, ScoreCard, ScoreMetricKey, TeamScoreInput } from "@/lib/game-types";
 import { useLiveTeams } from "@/lib/use-live-teams";
 import { ChangeEvent, useEffect, useMemo, useState } from "react";
+import { Scale } from "lucide-react";
 
 type JudgeScores = Record<string, ScoreCard>;
 
@@ -29,9 +30,23 @@ type JudgeScreenProps = {
   staffRole: "admin" | "judge";
 };
 
+const criterionColors: Record<string, string> = {
+  correction: "text-hot",
+  edgeCases: "text-cyan",
+  complexity: "text-accent-light",
+  readability: "text-success"
+};
+
+const criterionBarColors: Record<string, string> = {
+  correction: "bg-hot",
+  edgeCases: "bg-cyan",
+  complexity: "bg-accent",
+  readability: "bg-success"
+};
+
 export function JudgeScreen({ staffRole }: JudgeScreenProps) {
   const [now, setNow] = useState(0);
-  const { teams, round, usingDemoData, refresh, connected } = useLiveTeams();
+  const { teams, round, currentRound, usingDemoData, refresh, connected } = useLiveTeams();
   const [selectedTeamId, setSelectedTeamId] = useState("");
   const [scores, setScores] = useState<JudgeScores>({});
   const [saving, setSaving] = useState(false);
@@ -66,11 +81,15 @@ export function JudgeScreen({ staffRole }: JudgeScreenProps) {
   if (!selectedTeam) {
     return (
       <AppFrame
-        title="Judge"
-        subtitle="Judge cockpit aligned with the official rubric. Create a team first or keep the store live."
+        title="Notation"
+        subtitle="Cockpit de notation du jury"
+        currentRound={currentRound}
       >
-        <Panel eyebrow="Queue" title="No Teams">
-          <p className="text-sm text-fog">Aucune equipe disponible pour correction.</p>
+        <Panel accent="warn" eyebrow="File d'attente" title="Aucune équipe">
+          <div className="flex flex-col items-center py-10 text-center">
+            <div className="mb-4 text-text-faint/40"><Scale size={48} strokeWidth={1} /></div>
+            <p className="text-base text-text-muted">Aucune équipe disponible pour correction.</p>
+          </div>
         </Panel>
       </AppFrame>
     );
@@ -138,7 +157,7 @@ export function JudgeScreen({ staffRole }: JudgeScreenProps) {
       }
 
       await refresh();
-      setMessage("Evaluation enregistree.");
+      setMessage("Évaluation enregistrée.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Impossible d'enregistrer la note.");
     } finally {
@@ -146,131 +165,221 @@ export function JudgeScreen({ staffRole }: JudgeScreenProps) {
     }
   }
 
+  const isError = message.includes("Impossible");
+
   return (
     <AppFrame
-      title="Judge"
-      subtitle="Judge cockpit aligned with the official rubric. Each team is evaluated on correction, edge cases, complexity, readability and speed bonus, with a computed total out of 100."
+      title="Notation"
+      subtitle="Cockpit de notation du jury"
+      currentRound={currentRound}
     >
-      <div className="grid gap-6 xl:grid-cols-[0.72fr_1.28fr]">
-        <Panel eyebrow="Session" title="Staff Context">
-          <p className="text-sm text-fog">
-            Role actif: <span className="text-sand">{staffRole}</span>. L'API de scoring exige une session staff valide.
-          </p>
-          <p className="mt-2 text-sm text-fog">
-            Flux live: <span className={connected ? "text-lime" : "text-signal"}>{connected ? "SSE actif" : "reconnexion"}</span>
-          </p>
-        </Panel>
-        <Panel eyebrow="Queue" title="Teams To Review">
-          <p className="mb-4 text-sm text-fog">
-            {usingDemoData
-              ? "Mode demo actif. Les notes ne seront pas reliees a de vraies equipes."
-              : `${teams.length} equipe(s) chargee(s) depuis le backend live.`}
-          </p>
-          <div className="grid gap-3">
-            {teams.map((team) => {
-              const teamScore = scores[team.id];
-              if (!teamScore) {
-                return null;
-              }
+      <div className="grid gap-6 xl:grid-cols-[0.7fr_1.3fr]">
+        {/* ── Left column: Session + Team selector ──── */}
+        <div className="space-y-6">
+          <Panel accent="accent" eyebrow="Session" title="Contexte">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-text-muted">Rôle</span>
+                <span className="rounded-lg border border-accent/20 bg-accent/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-accent-light">
+                  {staffRole}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-text-muted">Flux live</span>
+                <span className="flex items-center gap-2">
+                  <span className={`inline-block h-2 w-2 rounded-full ${connected ? "bg-success animate-pulse-glow" : "bg-hot"}`} />
+                  <span className={`text-sm ${connected ? "text-success" : "text-hot"}`}>
+                    {connected ? "SSE actif" : "Reconnexion..."}
+                  </span>
+                </span>
+              </div>
+              {usingDemoData && (
+                <div className="rounded-xl border border-warn/20 bg-warn/5 px-4 py-3 text-sm text-warn">
+                  Mode démo actif — les notes ne seront pas reliées à de vraies équipes.
+                </div>
+              )}
+            </div>
+          </Panel>
 
-              const teamTotal =
-                teamScore.correction +
-                teamScore.edgeCases +
-                teamScore.complexity +
-                teamScore.readability +
-                (speedBonusByTeamId.get(team.id) ?? teamScore.speedBonus);
+          <Panel eyebrow="File d'attente" title="Équipes à évaluer">
+            <p className="mb-4 text-sm text-text-muted">
+              {teams.length} équipe(s) chargée(s) · Sélectionner pour noter
+            </p>
+            <div className="space-y-2.5">
+              {teams.map((team) => {
+                const teamScore = scores[team.id];
+                if (!teamScore) return null;
 
-              return (
-                <button
-                  key={team.id}
-                  className={`rounded-[1.5rem] border p-4 text-left transition ${
-                    selectedTeam.id === team.id
-                      ? "border-signal/50 bg-signal/10"
-                      : "border-white/10 bg-white/5 hover:border-lime/40"
-                  }`}
-                  onClick={() => setSelectedTeamId(team.id)}
-                  type="button"
-                >
-                  <p className="font-display text-3xl uppercase">{team.name}</p>
-                  <p className="mt-1 text-xs uppercase tracking-[0.18em] text-fog">
-                    {team.station} · {team.teamCode}
-                  </p>
-                  <p className="mt-4 text-sm text-fog">Score actuel: {teamTotal} / 100</p>
-                </button>
-              );
-            })}
-          </div>
-        </Panel>
+                const teamTotal =
+                  teamScore.correction +
+                  teamScore.edgeCases +
+                  teamScore.complexity +
+                  teamScore.readability +
+                  (speedBonusByTeamId.get(team.id) ?? teamScore.speedBonus);
+                const isSelected = selectedTeam.id === team.id;
 
-        <div className="grid gap-6 xl:col-span-1">
-          <Panel eyebrow="Evaluation" title={selectedTeam.name}>
-            <div className="grid gap-6 md:grid-cols-[1fr_0.36fr]">
-              <div className="grid gap-4">
+                return (
+                  <button
+                    key={team.id}
+                    className={`w-full rounded-xl border p-4 text-left transition-all ${
+                      isSelected
+                        ? "border-accent/40 bg-accent/10"
+                        : "border-border bg-elevated/30 hover:border-border-hover hover:bg-elevated/50"
+                    }`}
+                    onClick={() => setSelectedTeamId(team.id)}
+                    type="button"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className={`font-display text-base font-bold tracking-tight truncate ${isSelected ? "text-accent-light" : "text-text"}`}>
+                          {team.name}
+                        </p>
+                        <p className="mt-0.5 text-xs text-text-faint">
+                          {team.station} · {team.teamCode}
+                        </p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className={`font-display text-2xl font-bold ${isSelected ? "text-accent-light" : "text-text"}`}>
+                          {teamTotal}
+                        </p>
+                        <p className="text-xs text-text-faint">/ 100</p>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </Panel>
+        </div>
+
+        {/* ── Right column: Scoring form ──────────── */}
+        <div className="space-y-6">
+          <Panel accent="warn" eyebrow="Évaluation" title={selectedTeam.name}>
+            <div className="grid gap-6 lg:grid-cols-[1fr_0.38fr]">
+              {/* Scoring inputs */}
+              <div className="space-y-5">
                 {editableCriteria.map((criterion) => (
                   <label key={criterion.key} className="block">
-                    <div className="mb-2 flex items-center justify-between gap-4">
-                      <span className="text-xs uppercase tracking-[0.2em] text-fog">{criterion.label}</span>
-                      <span className="text-xs uppercase tracking-[0.2em] text-fog">/ {criterion.max}</span>
+                    <div className="mb-2.5 flex items-center justify-between gap-4">
+                      <span className={`text-xs font-bold uppercase tracking-wider ${criterionColors[criterion.key] ?? "text-text-muted"}`}>
+                        {criterion.label}
+                      </span>
+                      <span className="text-xs text-text-faint">/ {criterion.max}</span>
                     </div>
-                    <input
-                      className="signal-input"
-                      max={criterion.max}
-                      min={0}
-                      type="number"
-                      value={selectedScore[criterion.key] ?? 0}
-                      onChange={handleNumericChange(criterion.key, criterion.max)}
-                    />
+                    <div className="relative">
+                      <input
+                        className="signal-input pr-16"
+                        max={criterion.max}
+                        min={0}
+                        type="number"
+                        value={selectedScore[criterion.key] ?? 0}
+                        onChange={handleNumericChange(criterion.key, criterion.max)}
+                      />
+                      <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2">
+                        <div className="h-1.5 w-16 overflow-hidden rounded-full bg-elevated">
+                          <div
+                            className={`h-full rounded-full transition-all duration-300 ${criterionBarColors[criterion.key] ?? "bg-accent"}`}
+                            style={{ width: `${((selectedScore[criterion.key] ?? 0) / criterion.max) * 100}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </label>
                 ))}
-                <div className="rounded-[1.3rem] border border-white/10 bg-white/5 p-4">
-                  <div className="flex items-center justify-between gap-4">
-                    <span className="text-xs uppercase tracking-[0.2em] text-fog">Rapidite</span>
-                    <span className="text-xs uppercase tracking-[0.2em] text-fog">Auto</span>
+
+                {/* Speed bonus (read-only) */}
+                <div className="rounded-xl border border-warn/20 bg-warn/5 px-5 py-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold uppercase tracking-wider text-warn">Rapidité</span>
+                    <span className="text-xs text-text-faint">Automatique</span>
                   </div>
-                  <p className="mt-2 text-2xl text-sand">{selectedSpeedBonus}</p>
+                  <p className="mt-2 font-display text-3xl font-bold text-warn">{selectedSpeedBonus}</p>
                 </div>
+
+                {/* Notes */}
                 <label className="block">
-                  <span className="mb-2 block text-xs uppercase tracking-[0.2em] text-fog">Notes jury</span>
+                  <span className="mb-2.5 block text-xs font-bold uppercase tracking-wider text-text-muted">
+                    Notes du jury
+                  </span>
                   <textarea
-                    className="signal-input min-h-36"
+                    className="signal-input min-h-32 resize-y"
                     value={selectedScore.notes ?? ""}
                     onChange={(event) => updateScore("notes", event.target.value)}
-                    placeholder="Observations sur la correction, les cas limites ou la clarte du code."
+                    placeholder="Observations sur la correction, les cas limites ou la clarté du code."
                   />
                 </label>
+
+                {/* Feedback message */}
                 {message && (
-                  <p className={`text-sm ${message.includes("Impossible") ? "text-signal" : "text-lime"}`}>
+                  <div className={`flex items-center gap-3 rounded-xl border px-4 py-3 text-sm ${
+                    isError
+                      ? "border-hot/20 bg-hot/5 text-hot"
+                      : "border-success/20 bg-success/5 text-success"
+                  }`}>
+                    <span className={`inline-block h-2 w-2 rounded-full ${isError ? "bg-hot" : "bg-success"}`} />
                     {message}
-                  </p>
+                  </div>
                 )}
-                <button className="signal-button" onClick={handleSave} type="button" disabled={saving || usingDemoData}>
-                  {saving ? "Saving..." : usingDemoData ? "Demo Mode" : "Save Score"}
+
+                {/* Save button */}
+                <button
+                  className="signal-button w-full"
+                  onClick={handleSave}
+                  type="button"
+                  disabled={saving || usingDemoData}
+                >
+                  {saving ? "Enregistrement..." : usingDemoData ? "Mode démo" : "Enregistrer l'évaluation"}
                 </button>
               </div>
 
-              <div className="rounded-[1.8rem] border border-lime/20 bg-lime/10 p-5 text-lime">
-                <p className="text-xs uppercase tracking-[0.22em]">Total</p>
-                <p className="stat-value mt-3 text-lime">{total}</p>
-                <p className="mt-2 text-sm">
-                  Departage: correction, puis edge cases, puis complexite, puis ordre de soumission.
-                </p>
-                <div className="mt-4 rounded-[1.1rem] border border-lime/20 bg-black/15 p-3 text-sm">
-                  Tie-break: {formatTieBreakTuple(liveTeamsMap.get(selectedTeam.id) ?? { scoreCard: selectedScore, submissionOrder: selectedTeam.submittedAt ? 0 : null })}
+              {/* Score summary sidebar */}
+              <div className="space-y-5">
+                {/* Total score card */}
+                <div className="rounded-2xl border border-accent/25 bg-accent/5 p-5 text-center">
+                  <p className="text-xs font-bold uppercase tracking-wider text-accent-light">Total</p>
+                  <p className="mt-2 font-display text-6xl font-bold tracking-tight text-text">{total}</p>
+                  <p className="mt-2 text-sm text-text-faint">/ 100</p>
                 </div>
+
+                {/* Tie-break tuple */}
+                <div className="rounded-xl border border-border bg-elevated/50 p-4">
+                  <p className="text-xs font-bold uppercase tracking-wider text-text-faint">Départage</p>
+                  <p className="mt-2 font-mono text-sm text-text-muted">
+                    {formatTieBreakTuple(liveTeamsMap.get(selectedTeam.id) ?? { scoreCard: selectedScore, submissionOrder: selectedTeam.submittedAt ? 0 : null })}
+                  </p>
+                </div>
+
+                {/* Tie-break note */}
                 {liveTeamsMap.get(selectedTeam.id)?.tieBreakNote && (
-                  <div className="mt-3 rounded-[1.1rem] border border-signal/30 bg-signal/10 p-3 text-sm text-signal">
+                  <div className="rounded-xl border border-warn/20 bg-warn/5 p-4 text-sm text-warn">
                     {liveTeamsMap.get(selectedTeam.id)?.tieBreakNote}
                   </div>
                 )}
-                <div className="mt-4 rounded-[1.1rem] border border-lime/20 bg-black/15 p-3 text-sm">
+
+                {/* Submission status */}
+                <div className={`rounded-xl border p-4 text-sm ${
+                  selectedTeam.submittedAt
+                    ? "border-success/20 bg-success/5 text-success"
+                    : "border-border bg-elevated/50 text-text-faint"
+                }`}>
                   {selectedTeam.submittedAt
                     ? `Soumise le ${new Date(selectedTeam.submittedAt).toLocaleString("fr-BE")}`
-                    : "Soumission non marquee par l'organisateur"}
+                    : "Soumission non marquée"}
                 </div>
-                <div className="mt-6 grid gap-3 text-sm">
+
+                {/* Team members */}
+                <div className="space-y-2.5">
+                  <p className="text-xs font-bold uppercase tracking-wider text-text-faint">Composition</p>
                   {selectedTeam.members.map((member) => (
-                    <div key={member.id} className="rounded-[1.1rem] border border-lime/20 bg-black/15 p-3">
-                      Relay {member.relayOrder}: {member.name}
+                    <div key={member.id} className="rounded-lg border border-border bg-surface px-3 py-3">
+                      <p className={`text-xs font-bold uppercase tracking-wider ${
+                        member.relayOrder === 1 ? "text-hot" :
+                        member.relayOrder === 2 ? "text-cyan" :
+                        "text-accent-light"
+                      }`}>
+                        Relais {member.relayOrder}
+                      </p>
+                      <p className="mt-1 text-sm text-text">{member.name}</p>
                     </div>
                   ))}
                 </div>
@@ -278,23 +387,24 @@ export function JudgeScreen({ staffRole }: JudgeScreenProps) {
             </div>
           </Panel>
 
-          <Panel eyebrow="Rubric" title="Official Guidance">
+          {/* Official rubric */}
+          <Panel accent="cyan" eyebrow="Barème" title="Guide officiel">
             <div className="grid gap-4 md:grid-cols-2">
-              <div className="rounded-[1.5rem] border border-white/10 bg-white/5 p-4 text-sm text-fog">
-                <p className="text-xs uppercase tracking-[0.2em] text-signal">Correction / 40</p>
-                <p className="mt-2">Verifier la validite globale, la compilation et le comportement sur les cas simples.</p>
+              <div className="rounded-xl border border-hot/20 bg-hot/5 p-4">
+                <p className="text-xs font-bold uppercase tracking-wider text-hot">Correction / 40</p>
+                <p className="mt-2 text-sm text-text-muted">Vérifier la validité globale, la compilation et le comportement sur les cas simples.</p>
               </div>
-              <div className="rounded-[1.5rem] border border-white/10 bg-white/5 p-4 text-sm text-fog">
-                <p className="text-xs uppercase tracking-[0.2em] text-signal">Edge Cases / 20</p>
-                <p className="mt-2">Entrees vides, tailles minimales, doublons, valeurs negatives, cas impossibles.</p>
+              <div className="rounded-xl border border-cyan/20 bg-cyan/5 p-4">
+                <p className="text-xs font-bold uppercase tracking-wider text-cyan">Edge Cases / 20</p>
+                <p className="mt-2 text-sm text-text-muted">Entrées vides, tailles minimales, doublons, valeurs négatives, cas impossibles.</p>
               </div>
-              <div className="rounded-[1.5rem] border border-white/10 bg-white/5 p-4 text-sm text-fog">
-                <p className="text-xs uppercase tracking-[0.2em] text-signal">Complexite / 20</p>
-                <p className="mt-2">Approche generale, absence de hardcode et complexite coherente avec le sujet.</p>
+              <div className="rounded-xl border border-accent/20 bg-accent/5 p-4">
+                <p className="text-xs font-bold uppercase tracking-wider text-accent-light">Complexité / 20</p>
+                <p className="mt-2 text-sm text-text-muted">Approche générale, absence de hardcode et complexité cohérente avec le sujet.</p>
               </div>
-              <div className="rounded-[1.5rem] border border-white/10 bg-white/5 p-4 text-sm text-fog">
-                <p className="text-xs uppercase tracking-[0.2em] text-signal">Lisibilite / 10</p>
-                <p className="mt-2">Noms clairs, structure propre, relais facile entre coequipiers.</p>
+              <div className="rounded-xl border border-success/20 bg-success/5 p-4">
+                <p className="text-xs font-bold uppercase tracking-wider text-success">Lisibilité / 10</p>
+                <p className="mt-2 text-sm text-text-muted">Noms clairs, structure propre, relais facile entre coéquipiers.</p>
               </div>
             </div>
           </Panel>

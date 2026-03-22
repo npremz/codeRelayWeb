@@ -1,18 +1,22 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { LiveTeamsResponse, PublicTeam, RoundControlState } from "@/lib/game-types";
+import { LiveTeamsResponse, PublicTeam, RoundControlState, RoundSummary } from "@/lib/game-types";
 import { defaultRoundState } from "@/lib/demo-game";
 
 export function useLiveTeams() {
   const [teams, setTeams] = useState<PublicTeam[]>([]);
   const [round, setRound] = useState<RoundControlState>(defaultRoundState);
+  const [currentRound, setCurrentRound] = useState<RoundSummary | null>(null);
+  const [rounds, setRounds] = useState<RoundSummary[]>([]);
   const [usingDemoData, setUsingDemoData] = useState(false);
   const [connected, setConnected] = useState(false);
 
   function applyPayload(payload: LiveTeamsResponse) {
     setTeams(payload.teams);
     setRound(payload.round);
+    setCurrentRound(payload.currentRound ?? null);
+    setRounds(payload.rounds ?? []);
     setUsingDemoData(payload.usingDemoData);
   }
 
@@ -91,6 +95,8 @@ export function useLiveTeams() {
   return {
     teams,
     round,
+    currentRound,
+    rounds,
     usingDemoData,
     connected,
     refresh

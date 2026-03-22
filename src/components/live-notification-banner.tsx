@@ -11,19 +11,41 @@ export function LiveNotificationBanner({ notification }: LiveNotificationBannerP
     return null;
   }
 
-  const toneClassName =
-    notification.tone === "lime"
-      ? "border-lime/35 bg-lime/15 text-lime"
-      : notification.tone === "fog"
-        ? "border-white/15 bg-white/10 text-sand"
-        : "border-signal/35 bg-signal/15 text-signal";
+  const toneConfig = {
+    lime: {
+      bg: "bg-success/10",
+      border: "border-success/30",
+      text: "text-success",
+      dot: "bg-success"
+    },
+    fog: {
+      bg: "bg-elevated",
+      border: "border-border",
+      text: "text-text",
+      dot: "bg-text-muted"
+    },
+    signal: {
+      bg: "bg-hot/10",
+      border: "border-hot/30",
+      text: "text-hot",
+      dot: "bg-hot"
+    }
+  };
+
+  const tone = toneConfig[notification.tone] ?? toneConfig.fog;
 
   return (
-    <aside className="pointer-events-none fixed right-6 top-6 z-50 max-w-md animate-[fade-in_180ms_ease-out]">
-      <div className={`rounded-[1.7rem] border px-5 py-4 shadow-glow backdrop-blur ${toneClassName}`}>
-        <p className="text-xs uppercase tracking-[0.24em]">Live Notification</p>
-        <h2 className="mt-2 font-display text-4xl uppercase leading-none">{notification.title}</h2>
-        <p className="mt-3 text-sm text-current/90">{notification.message}</p>
+    <aside className="pointer-events-none fixed right-5 top-5 z-50 max-w-md animate-fade-in">
+      <div className={`rounded-2xl border ${tone.border} ${tone.bg} px-5 py-4 shadow-2xl backdrop-blur-sm`}>
+        <div className="flex items-start gap-3">
+          <span className={`mt-1.5 inline-block h-2.5 w-2.5 shrink-0 rounded-full ${tone.dot} animate-pulse-glow`} />
+          <div>
+            <p className={`font-display text-base font-bold tracking-tight ${tone.text}`}>
+              {notification.title}
+            </p>
+            <p className="mt-1 text-sm text-text-muted">{notification.message}</p>
+          </div>
+        </div>
       </div>
     </aside>
   );

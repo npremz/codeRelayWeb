@@ -3,6 +3,7 @@
 import { AppFrame } from "@/components/app-frame";
 import { Panel } from "@/components/panel";
 import { FormEvent, useMemo, useState } from "react";
+import { Settings, Star, Lock } from "lucide-react";
 
 type Role = "admin" | "judge";
 
@@ -17,11 +18,19 @@ export function StaffLoginScreen({ preferredRole, nextPath }: StaffLoginScreenPr
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
 
-  const hint = useMemo(
+  const roleConfig = useMemo(
     () =>
       selectedRole === "admin"
-        ? "Code orga requis pour le tableau de pilotage."
-        : "Code correcteur requis pour le cockpit de notation.",
+        ? {
+            label: "Organisateur",
+            hint: "Accès au tableau de pilotage complet du tournoi",
+            icon: <Settings size={16} className="inline-block mr-1" />
+          }
+        : {
+            label: "Jury",
+            hint: "Accès au cockpit de notation des équipes",
+            icon: <Star size={16} className="inline-block mr-1" />
+          },
     [selectedRole]
   );
 
@@ -64,7 +73,7 @@ export function StaffLoginScreen({ preferredRole, nextPath }: StaffLoginScreenPr
     try {
       await fetch("/api/staff/session", { method: "DELETE" });
       setCode("");
-      setMessage("Session staff fermee.");
+      setMessage("Session staff fermée.");
     } catch {
       setMessage("Impossible de fermer la session.");
     } finally {
@@ -74,82 +83,104 @@ export function StaffLoginScreen({ preferredRole, nextPath }: StaffLoginScreenPr
 
   return (
     <AppFrame
-      title="Staff Access"
-      subtitle="Admin et juge passent par un code court partage. Les participants restent sans login et n'utilisent jamais cet ecran."
+      title="Accès Staff"
+      subtitle="Connexion sécurisée pour organisateurs et jury"
     >
-      <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
-        <Panel eyebrow="Access Control" title="Staff Login">
-          <form className="space-y-5" onSubmit={handleSubmit}>
-            <div className="grid gap-3 md:grid-cols-2">
+      <div className="mx-auto max-w-xl">
+        <Panel>
+          {/* Header */}
+          <div className="mb-8 flex items-center gap-4">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-accent/10 text-accent">
+              <Lock size={28} />
+            </div>
+            <div>
+              <h2 className="font-display text-2xl font-bold tracking-tight">Connexion Staff</h2>
+              <p className="mt-1 text-sm text-text-muted">Entrez votre code d'accès pour continuer</p>
+            </div>
+          </div>
+
+          <form className="space-y-6" onSubmit={handleSubmit}>
+            {/* Role selector */}
+            <div className="grid grid-cols-2 gap-3">
               {(["admin", "judge"] as const).map((role) => (
                 <button
                   key={role}
-                  className={`rounded-[1.4rem] border px-4 py-4 text-left uppercase tracking-[0.18em] transition ${
+                  className={`rounded-xl border px-4 py-5 text-center transition-all ${
                     selectedRole === role
-                      ? "border-signal/50 bg-signal/10 text-sand"
-                      : "border-white/10 bg-white/5 text-fog"
+                      ? "border-accent/40 bg-accent/10 text-accent-light"
+                      : "border-border bg-elevated text-text-faint hover:border-border-hover hover:text-text-muted"
                   }`}
                   onClick={() => setSelectedRole(role)}
                   type="button"
                 >
-                  {role}
+                  <span className="flex justify-center text-2xl mb-2">{role === "admin" ? <Settings size={24} /> : <Star size={24} />}</span>
+                  <span className="block text-sm font-bold uppercase tracking-wide">
+                    {role === "admin" ? "Admin" : "Jury"}
+                  </span>
                 </button>
               ))}
             </div>
 
-            <div className="rounded-[1.4rem] border border-lime/20 bg-lime/10 p-4 text-sm text-lime">{hint}</div>
+            {/* Role description */}
+            <div className="rounded-xl border border-accent/15 bg-accent/5 px-4 py-3 text-sm text-accent-light">
+              {roleConfig.icon} {roleConfig.hint}
+            </div>
 
+            {/* Code input */}
             <label className="block">
-              <span className="mb-2 block text-xs uppercase tracking-[0.22em] text-fog">Access Code</span>
+              <span className="mb-2 block text-xs font-bold uppercase tracking-wider text-text-faint">
+                Code d'accès
+              </span>
               <input
                 className="signal-input"
                 type="password"
                 value={code}
                 onChange={(event) => setCode(event.target.value)}
-                placeholder={selectedRole === "admin" ? "admin-relay" : "judge-relay"}
+                placeholder="Entrez le code..."
               />
             </label>
 
+            {/* Feedback message */}
             {message && (
-              <p
-                className={`text-sm ${
-                  message.includes("impossible") || message.includes("invalide") ? "text-signal" : "text-lime"
-                }`}
-              >
+              <div className={`rounded-xl border px-4 py-3 text-sm ${
+                message.includes("impossible") || message.includes("invalide")
+                  ? "border-hot/20 bg-hot/5 text-hot"
+                  : "border-success/20 bg-success/5 text-success"
+              }`}>
                 {message}
-              </p>
+              </div>
             )}
 
-            <div className="flex flex-wrap gap-3">
-              <button className="signal-button" type="submit" disabled={busy || code.trim().length === 0}>
-                {busy ? "Processing..." : "Open Staff Area"}
+            {/* Action buttons */}
+            <div className="flex gap-3">
+              <button className="signal-button flex-1" type="submit" disabled={busy || code.trim().length === 0}>
+                {busy ? "Connexion..." : "Se connecter"}
               </button>
               <button className="ghost-button" onClick={handleLogout} type="button" disabled={busy}>
-                Logout
+                Déconnexion
               </button>
             </div>
           </form>
+
+          {/* Info section */}
+          <div className="mt-8 border-t border-border pt-6">
+            <h3 className="text-sm font-bold text-text-muted">Niveaux d'accès</h3>
+            <ul className="mt-3 space-y-2.5 text-sm text-text-muted">
+              <li className="flex items-start gap-3">
+                <span className="mt-0.5 text-accent-light">→</span>
+                <span><strong className="text-text">Participants</strong> — sans login, code équipe public + token secret</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="mt-0.5 text-accent-light">→</span>
+                <span><strong className="text-text">Admin</strong> — contrôle total du tournoi et des manches</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="mt-0.5 text-accent-light">→</span>
+                <span><strong className="text-text">Jury</strong> — notation et cockpit de correction</span>
+              </li>
+            </ul>
+          </div>
         </Panel>
-
-        <div className="grid gap-6">
-          <Panel eyebrow="Rules" title="Auth Strategy">
-            <ul className="space-y-3 text-sm text-fog">
-              <li>Participants: aucun login, uniquement `teamCode` public et token secret de gestion.</li>
-              <li>Staff: code partage court, transforme en cookie HttpOnly signe.</li>
-              <li>Admin: acces exclusif au tableau d'organisation.</li>
-              <li>Judge: acces au cockpit de correction et a l'API de scoring.</li>
-            </ul>
-          </Panel>
-
-          <Panel eyebrow="Config" title="Environment">
-            <ul className="space-y-3 text-sm text-fog">
-              <li>`CODE_RELAY_ADMIN_CODE` pour l'acces organisateur.</li>
-              <li>`CODE_RELAY_JUDGE_CODE` pour l'acces correcteur.</li>
-              <li>`CODE_RELAY_SESSION_SECRET` pour signer les cookies staff.</li>
-              <li>Sans variables, les valeurs locales par defaut restent `admin-relay` et `judge-relay`.</li>
-            </ul>
-          </Panel>
-        </div>
       </div>
     </AppFrame>
   );
