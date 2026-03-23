@@ -107,6 +107,7 @@ func runJudge(args []string) (int, error) {
 	submission := fs.String("submission", "", "Explicit path to the Python file to evaluate")
 	pythonBin := fs.String("python", defaultPython, "Python interpreter to use")
 	jsonOutput := fs.Bool("json", false, "Emit JSON report")
+	detailedOutput := fs.Bool("detailed", false, "Emit the full jury sheet in terminal output")
 	if err := fs.Parse(args); err != nil {
 		return exitUsage, err
 	}
@@ -156,13 +157,13 @@ func runJudge(args []string) (int, error) {
 		}
 		fmt.Println(string(payload))
 	} else {
-		printReport(report, suggestion)
+		printReport(report, suggestion, *detailedOutput)
 	}
 
 	return exitCodeForStatus(report.Status), nil
 }
 
-func printReport(report engine.Report, suggestion scoring.Suggestion) {
+func printReport(report engine.Report, suggestion scoring.Suggestion, detailed bool) {
 	statusColor := ansiYellow
 	statusLabel := strings.ToUpper(report.Status)
 	switch report.Status {
@@ -173,57 +174,98 @@ func printReport(report engine.Report, suggestion scoring.Suggestion) {
 	}
 
 	fmt.Printf("%sCode Relay Judge%s\n", style(ansiBlue, true), style("", false))
-	fmt.Printf("Subject: %s (%s)\n", report.SubjectTitle, report.SubjectID)
-	fmt.Printf("Submission: %s\n", report.SubmissionPath)
-	fmt.Printf("Result: %s%s%s\n", style(statusColor, true), statusLabel, style("", false))
-	fmt.Printf("Duration: %.2fms\n", report.DurationMs)
+	fmt.Println("--------------------------------------------------")
+	fmt.Printf("Subject   : %s (%s)\n", report.SubjectTitle, report.SubjectID)
+	fmt.Printf("File      : %s\n", report.SubmissionPath)
+	fmt.Printf("Status    : %s%s%s\n", style(statusColor, true), statusLabel, style("", false))
+	fmt.Printf("Time      : %.2fms\n", report.DurationMs)
 
 	if report.Message != "" {
-		fmt.Printf("Message: %s\n", report.Message)
+		fmt.Printf("Message   : %s\n", report.Message)
 	}
 
 	if len(report.Groups) > 0 {
-		fmt.Println("Groups:")
-		for _, group := range report.Groups {
-			fmt.Printf("  - %s: %d/%d passed (%d executed)\n", group.Name, group.Passed, group.Total, group.Executed)
-		}
+		fmt.Printf("Tests     : %s\n", compactGroups(report.Groups))
 	}
 
 	if len(report.Failures) > 0 {
-		fmt.Println("Failures:")
-		for _, failure := range report.Failures {
-			fmt.Printf("  - [%s] %s: %s\n", failure.Group, failure.Name, failure.Message)
-		}
+		fmt.Printf("Issues    : %s\n", compactFailures(report.Failures))
 	}
 
-	fmt.Println("Suggested scoring:")
-	fmt.Printf("  - Correction: %d/40\n", suggestion.Correction)
-	fmt.Printf("  - Edge cases: %d/20\n", suggestion.EdgeCases)
-	fmt.Printf("  - Complexity: %d/20\n", suggestion.Complexity)
-
-	if len(suggestion.Notes) > 0 {
-		fmt.Println("Scoring notes:")
-		for _, note := range suggestion.Notes {
-			fmt.Printf("  - %s\n", note)
-		}
-	}
-
-	if len(suggestion.ManualCriteria) > 0 {
-		fmt.Println("Manual criteria:")
-		for _, item := range suggestion.ManualCriteria {
-			fmt.Printf("  - %s\n", item)
-		}
-	}
+	fmt.Printf("Auto      : correction %d/40 | edge %d/20 | complexity %d/20\n",
+		suggestion.Correction,
+		suggestion.EdgeCases,
+		suggestion.Complexity,
+	)
+	fmt.Printf("Manual    : readability __/10 | speed __/10\n")
+	fmt.Printf("Subtotal  : %d/80 auto | final ____/100\n", suggestion.PartialTotal)
 
 	if len(suggestion.DecisionSupport) > 0 {
-		fmt.Println("Decision support:")
-		for _, item := range suggestion.DecisionSupport {
-			fmt.Printf("  - %s\n", item)
-		}
+		fmt.Printf("Profile   : %s\n", suggestion.DecisionSupport[0])
 	}
 
-	fmt.Println()
-	printJurySheet(report, suggestion)
+	if !detailed {
+		fmt.Printf("Details   : use --detailed or --json\n")
+	}
+
+	if detailed {
+		fmt.Println()
+		if len(suggestion.Notes) > 0 {
+			fmt.Println("Scoring notes:")
+			for _, note := range suggestion.Notes {
+				fmt.Printf("  - %s\n", note)
+			}
+			fmt.Println()
+		}
+		printJurySheet(report, suggestion)
+	}
+}
+
+func compactGroups(groups []engine.GroupReport) string {
+	parts := make([]string, 0, len(groups))
+	for _, group := range groups {
+		parts = append(parts, fmt.Sprintf("%s %d/%d", shortGroupName(group.Name), group.Passed, group.Total))
+	}
+	return strings.Join(parts, " | ")
+}
+
+func compactFailures(failures []engine.Failure) string {
+	maxItems := 3
+	parts := make([]string, 0, min(len(failures), maxItems))
+	for index, failure := range failures {
+		if index >= maxItems {
+			break
+		}
+		parts = append(parts, fmt.Sprintf("%s/%s: %s", shortGroupName(failure.Group), failure.Name, failure.Message))
+	}
+
+	if len(failures) > maxItems {
+		parts = append(parts, fmt.Sprintf("+%d more", len(failures)-maxItems))
+	}
+
+	return strings.Join(parts, " | ")
+}
+
+func shortGroupName(name string) string {
+	switch name {
+	case "core":
+		return "core"
+	case "edge":
+		return "edge"
+	case "anti-hardcode":
+		return "anti"
+	case "perf":
+		return "perf"
+	default:
+		return name
+	}
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }
 
 func runInteractive(subjectsDir, workspace, pythonBin string) (int, error) {
@@ -294,7 +336,7 @@ func runInteractive(subjectsDir, workspace, pythonBin string) (int, error) {
 	}
 
 	fmt.Println()
-	printReport(report, scoring.Build(report))
+	printReport(report, scoring.Build(report), false)
 	return exitCodeForStatus(report.Status), nil
 }
 

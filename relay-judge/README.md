@@ -46,6 +46,12 @@ Sortie JSON:
 go run ./cmd/relay-judge run --subject two-sum --workspace ./examples --json
 ```
 
+Sortie terminal detaillee si necessaire:
+
+```bash
+go run ./cmd/relay-judge run --subject two-sum --workspace ./examples --detailed
+```
+
 ## Organisation
 
 - `subjects/<id>/subject.json`: definition du sujet et des tests
@@ -70,11 +76,13 @@ Le juge affiche ensuite des suggestions pour:
 
 `Lisibilite / proprete` et `Rapidité` restent a evaluer manuellement par le jury.
 
-La sortie terminal inclut maintenant:
+La sortie terminal est compacte par defaut et inclut:
 
 - un rapport technique court
 - une aide a la decision
-- une fiche jury pre-remplie avec les champs manuels restants
+- un resume `Auto / Manual / Subtotal`
+
+La fiche jury detaillee reste disponible avec `--detailed`.
 
 ## Distribution
 
