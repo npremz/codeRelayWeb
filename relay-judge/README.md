@@ -28,10 +28,22 @@ Executer directement un fichier Python et laisser le juge retrouver le sujet:
 go run ./cmd/relay-judge ./examples/two_sum.py
 ```
 
+Avec sortie detaillee:
+
+```bash
+go run ./cmd/relay-judge ./examples/two_sum.py --detailed
+```
+
 Ou avec `run`:
 
 ```bash
 go run ./cmd/relay-judge run ./examples/two_sum.py
+```
+
+Avec `run` et la fiche detaillee:
+
+```bash
+go run ./cmd/relay-judge run ./examples/two_sum.py --detailed
 ```
 
 Mode interactif pour le terrain:

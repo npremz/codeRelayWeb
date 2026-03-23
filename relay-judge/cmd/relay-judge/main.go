@@ -125,6 +125,10 @@ func runJudge(args []string) (int, error) {
 		*submission = fs.Args()[0]
 	}
 
+	if err := applyTrailingRunFlags(fs.Args(), jsonOutput, detailedOutput); err != nil {
+		return exitUsage, err
+	}
+
 	if strings.TrimSpace(*subjectArg) == "" {
 		if strings.TrimSpace(*submission) != "" {
 			return runWithInferredSubject(*subjectsDir, *submission, *pythonBin, *jsonOutput, *detailedOutput)
@@ -180,17 +184,98 @@ func runJudge(args []string) (int, error) {
 }
 
 func tryDirectSubmission(args []string) (int, bool, error) {
-	if len(args) != 1 {
+	if len(args) == 0 {
 		return 0, false, nil
 	}
 
-	candidate := strings.TrimSpace(args[0])
-	if candidate == "" || strings.HasPrefix(candidate, "-") || !strings.HasSuffix(candidate, ".py") {
-		return 0, false, nil
+	submissionPath, subjectsDir, pythonBin, jsonOutput, detailedOutput, handled, err := parseDirectArgs(args)
+	if !handled || err != nil {
+		return 0, handled, err
 	}
 
-	code, err := runWithInferredSubject(detectSubjectsDir(), candidate, defaultPython, false, false)
+	code, err := runWithInferredSubject(subjectsDir, submissionPath, pythonBin, jsonOutput, detailedOutput)
 	return code, true, err
+}
+
+func parseDirectArgs(args []string) (submissionPath, subjectsDir, pythonBin string, jsonOutput, detailedOutput, handled bool, err error) {
+	subjectsDir = detectSubjectsDir()
+	pythonBin = defaultPython
+
+	for index := 0; index < len(args); index++ {
+		current := strings.TrimSpace(args[index])
+		if current == "" {
+			continue
+		}
+
+		switch current {
+		case "list", "run":
+			return "", "", "", false, false, false, nil
+		case "--detailed":
+			detailedOutput = true
+			continue
+		case "--json":
+			jsonOutput = true
+			continue
+		case "--python":
+			if index+1 >= len(args) {
+				return "", "", "", false, false, true, fmt.Errorf("--python requires a value")
+			}
+			index++
+			pythonBin = strings.TrimSpace(args[index])
+			continue
+		case "--subjects-dir":
+			if index+1 >= len(args) {
+				return "", "", "", false, false, true, fmt.Errorf("--subjects-dir requires a value")
+			}
+			index++
+			subjectsDir = strings.TrimSpace(args[index])
+			continue
+		}
+
+		if strings.HasPrefix(current, "-") {
+			return "", "", "", false, false, true, fmt.Errorf("unknown flag %q", current)
+		}
+
+		if !strings.HasSuffix(current, ".py") {
+			return "", "", "", false, false, false, nil
+		}
+
+		if submissionPath != "" {
+			return "", "", "", false, false, true, fmt.Errorf("multiple Python files provided")
+		}
+
+		submissionPath = current
+	}
+
+	if submissionPath == "" {
+		return "", "", "", false, false, false, nil
+	}
+
+	return submissionPath, subjectsDir, pythonBin, jsonOutput, detailedOutput, true, nil
+}
+
+func applyTrailingRunFlags(args []string, jsonOutput, detailedOutput *bool) error {
+	startIndex := 0
+	if len(args) > 0 && strings.HasSuffix(strings.TrimSpace(args[0]), ".py") {
+		startIndex = 1
+	}
+
+	for _, arg := range args[startIndex:] {
+		switch strings.TrimSpace(arg) {
+		case "":
+			continue
+		case "--json":
+			*jsonOutput = true
+		case "--detailed":
+			*detailedOutput = true
+		default:
+			if strings.HasPrefix(strings.TrimSpace(arg), "-") {
+				return fmt.Errorf("unknown trailing flag %q", arg)
+			}
+		}
+	}
+
+	return nil
 }
 
 func runWithInferredSubject(subjectsDir, submissionPath, pythonBin string, jsonOutput, detailedOutput bool) (int, error) {
