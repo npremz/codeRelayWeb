@@ -1,0 +1,53 @@
+{
+  "id": "valid-parentheses",
+  "title": "Valid Parentheses",
+  "description": "Return true when the parentheses string is valid.",
+  "file_name": "valid_parentheses.py",
+  "function_name": "valid_parentheses",
+  "checker": "exact_bool",
+  "time_limit_ms": 1200,
+  "tests": [
+    {
+      "name": "simple_valid",
+      "group": "core",
+      "args": ["()[]{}"],
+      "expected": true
+    },
+    {
+      "name": "simple_invalid",
+      "group": "core",
+      "args": ["(]"],
+      "expected": false
+    },
+    {
+      "name": "nested_valid",
+      "group": "edge",
+      "args": ["{[()()]}"],
+      "expected": true
+    },
+    {
+      "name": "wrong_order",
+      "group": "edge",
+      "args": ["([)]"],
+      "expected": false
+    },
+    {
+      "name": "unfinished_stack",
+      "group": "edge",
+      "args": ["(((()"],
+      "expected": false
+    },
+    {
+      "name": "anti_hardcode_mixed_valid",
+      "group": "anti-hardcode",
+      "args": ["([]{})[{}]"],
+      "expected": true
+    },
+    {
+      "name": "long_balanced",
+      "group": "perf",
+      "args": ["(((((((((((((((((((((((((((((((((((((((((((((((((())))))))))))))))))))))))))))))))))))))))))))))))))"],
+      "expected": true
+    }
+  ]
+}

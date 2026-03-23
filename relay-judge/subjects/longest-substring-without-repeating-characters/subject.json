@@ -1,0 +1,47 @@
+{
+  "id": "longest-substring-without-repeating-characters",
+  "title": "Longest Substring Without Repeating Characters",
+  "description": "Return the length of the longest substring without repeated characters.",
+  "file_name": "longest_substring_without_repeating_characters.py",
+  "function_name": "longest_substring_without_repeating_characters",
+  "checker": "exact_int",
+  "time_limit_ms": 1500,
+  "tests": [
+    {
+      "name": "leetcode_example_1",
+      "group": "core",
+      "args": ["abcabcbb"],
+      "expected": 3
+    },
+    {
+      "name": "all_same",
+      "group": "core",
+      "args": ["bbbbb"],
+      "expected": 1
+    },
+    {
+      "name": "overlapping_window",
+      "group": "edge",
+      "args": ["pwwkew"],
+      "expected": 3
+    },
+    {
+      "name": "empty_string",
+      "group": "edge",
+      "args": [""],
+      "expected": 0
+    },
+    {
+      "name": "anti_hardcode_repeated_after_gap",
+      "group": "anti-hardcode",
+      "args": ["dvdf"],
+      "expected": 3
+    },
+    {
+      "name": "perf_unique_tail",
+      "group": "perf",
+      "args": ["abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz"],
+      "expected": 26
+    }
+  ]
+}

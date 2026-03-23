@@ -1,0 +1,47 @@
+{
+  "id": "first-unique-character",
+  "title": "First Unique Character in a String",
+  "description": "Return the index of the first non-repeating character, or -1 if none exists.",
+  "file_name": "first_unique_character.py",
+  "function_name": "first_unique_character",
+  "checker": "exact_int",
+  "time_limit_ms": 1200,
+  "tests": [
+    {
+      "name": "leetcode_example_1",
+      "group": "core",
+      "args": ["leetcode"],
+      "expected": 0
+    },
+    {
+      "name": "leetcode_example_2",
+      "group": "core",
+      "args": ["loveleetcode"],
+      "expected": 2
+    },
+    {
+      "name": "no_unique_character",
+      "group": "edge",
+      "args": ["aabbcc"],
+      "expected": -1
+    },
+    {
+      "name": "unique_in_middle",
+      "group": "edge",
+      "args": ["aabbcddef"],
+      "expected": 4
+    },
+    {
+      "name": "anti_hardcode_unique_at_end",
+      "group": "anti-hardcode",
+      "args": ["zzxxyywwv"],
+      "expected": 8
+    },
+    {
+      "name": "long_perf_case",
+      "group": "perf",
+      "args": ["aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaab"],
+      "expected": 300
+    }
+  ]
+}

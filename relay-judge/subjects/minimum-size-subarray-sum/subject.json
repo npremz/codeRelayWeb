@@ -1,0 +1,47 @@
+{
+  "id": "minimum-size-subarray-sum",
+  "title": "Minimum Size Subarray Sum",
+  "description": "Return the minimal length of a contiguous subarray of which the sum is at least target.",
+  "file_name": "minimum_size_subarray_sum.py",
+  "function_name": "minimum_size_subarray_sum",
+  "checker": "exact_int",
+  "time_limit_ms": 1500,
+  "tests": [
+    {
+      "name": "leetcode_example_1",
+      "group": "core",
+      "args": [7, [2, 3, 1, 2, 4, 3]],
+      "expected": 2
+    },
+    {
+      "name": "single_element_match",
+      "group": "core",
+      "args": [4, [1, 4, 4]],
+      "expected": 1
+    },
+    {
+      "name": "no_solution",
+      "group": "edge",
+      "args": [100, [1, 2, 3, 4, 5]],
+      "expected": 0
+    },
+    {
+      "name": "window_moves_multiple_times",
+      "group": "edge",
+      "args": [11, [1, 2, 3, 4, 5]],
+      "expected": 3
+    },
+    {
+      "name": "anti_hardcode_short_best_window",
+      "group": "anti-hardcode",
+      "args": [8, [2, 1, 5, 2, 3, 2]],
+      "expected": 3
+    },
+    {
+      "name": "perf_long_prefix",
+      "group": "perf",
+      "args": [15, [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]],
+      "expected": 15
+    }
+  ]
+}
