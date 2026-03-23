@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 )
 
@@ -135,4 +136,37 @@ func ResolvePath(subjectsDir, subjectArg string) (string, error) {
 	}
 
 	return "", fmt.Errorf("subject %q not found in %s", subjectArg, subjectsDir)
+}
+
+func ResolveByFileName(subjectsDir, fileName string) (Summary, error) {
+	items, err := Discover(subjectsDir)
+	if err != nil {
+		return Summary{}, err
+	}
+
+	normalizedFileName := strings.TrimSpace(filepath.Base(fileName))
+	if normalizedFileName == "" {
+		return Summary{}, fmt.Errorf("empty submission filename")
+	}
+
+	var matches []Summary
+	for _, item := range items {
+		if item.FileName == normalizedFileName {
+			matches = append(matches, item)
+		}
+	}
+
+	switch len(matches) {
+	case 0:
+		return Summary{}, fmt.Errorf("no subject matches filename %q", normalizedFileName)
+	case 1:
+		return matches[0], nil
+	default:
+		ids := make([]string, 0, len(matches))
+		for _, match := range matches {
+			ids = append(ids, match.ID)
+		}
+		sort.Strings(ids)
+		return Summary{}, fmt.Errorf("filename %q matches multiple subjects: %s", normalizedFileName, strings.Join(ids, ", "))
+	}
 }

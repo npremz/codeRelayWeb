@@ -49,6 +49,14 @@ func main() {
 		os.Exit(exitUsage)
 	}
 
+	if code, handled, err := tryDirectSubmission(os.Args[1:]); handled {
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "error:", err)
+			os.Exit(exitInternal)
+		}
+		os.Exit(code)
+	}
+
 	switch os.Args[1] {
 	case "list":
 		if err := runList(os.Args[2:]); err != nil {
@@ -70,7 +78,8 @@ func main() {
 
 func printUsage() {
 	fmt.Fprintf(os.Stderr, "relay-judge <command>\n")
-	fmt.Fprintf(os.Stderr, "relay-judge                # interactive mode\n\n")
+	fmt.Fprintf(os.Stderr, "relay-judge                # interactive mode\n")
+	fmt.Fprintf(os.Stderr, "relay-judge <file.py>      # infer the subject from the filename\n\n")
 	fmt.Fprintf(os.Stderr, "Commands:\n")
 	fmt.Fprintf(os.Stderr, "  list   List available subjects\n")
 	fmt.Fprintf(os.Stderr, "  run    Evaluate a Python submission\n")
@@ -112,7 +121,14 @@ func runJudge(args []string) (int, error) {
 		return exitUsage, err
 	}
 
+	if strings.TrimSpace(*submission) == "" && len(fs.Args()) > 0 {
+		*submission = fs.Args()[0]
+	}
+
 	if strings.TrimSpace(*subjectArg) == "" {
+		if strings.TrimSpace(*submission) != "" {
+			return runWithInferredSubject(*subjectsDir, *submission, *pythonBin, *jsonOutput, *detailedOutput)
+		}
 		if isInteractiveTerminal() {
 			return runInteractive(*subjectsDir, *workspace, *pythonBin)
 		}
@@ -158,6 +174,60 @@ func runJudge(args []string) (int, error) {
 		fmt.Println(string(payload))
 	} else {
 		printReport(report, suggestion, *detailedOutput)
+	}
+
+	return exitCodeForStatus(report.Status), nil
+}
+
+func tryDirectSubmission(args []string) (int, bool, error) {
+	if len(args) != 1 {
+		return 0, false, nil
+	}
+
+	candidate := strings.TrimSpace(args[0])
+	if candidate == "" || strings.HasPrefix(candidate, "-") || !strings.HasSuffix(candidate, ".py") {
+		return 0, false, nil
+	}
+
+	code, err := runWithInferredSubject(detectSubjectsDir(), candidate, defaultPython, false, false)
+	return code, true, err
+}
+
+func runWithInferredSubject(subjectsDir, submissionPath, pythonBin string, jsonOutput, detailedOutput bool) (int, error) {
+	summary, err := subject.ResolveByFileName(subjectsDir, submissionPath)
+	if err != nil {
+		return exitUsage, err
+	}
+
+	spec, err := subject.Load(summary.Path)
+	if err != nil {
+		return exitInternal, err
+	}
+
+	report, err := engine.Run(spec, engine.Options{
+		PythonBin:      pythonBin,
+		SubmissionPath: submissionPath,
+	})
+	if err != nil {
+		return exitInternal, err
+	}
+
+	suggestion := scoring.Build(report)
+
+	if jsonOutput {
+		payload, err := json.MarshalIndent(struct {
+			Report     engine.Report      `json:"report"`
+			Suggestion scoring.Suggestion `json:"suggestion"`
+		}{
+			Report:     report,
+			Suggestion: suggestion,
+		}, "", "  ")
+		if err != nil {
+			return exitInternal, err
+		}
+		fmt.Println(string(payload))
+	} else {
+		printReport(report, suggestion, detailedOutput)
 	}
 
 	return exitCodeForStatus(report.Status), nil

@@ -22,6 +22,18 @@ Executer un sujet depuis le workspace courant:
 go run ./cmd/relay-judge run --subject two-sum --workspace ./examples
 ```
 
+Executer directement un fichier Python et laisser le juge retrouver le sujet:
+
+```bash
+go run ./cmd/relay-judge ./examples/two_sum.py
+```
+
+Ou avec `run`:
+
+```bash
+go run ./cmd/relay-judge run ./examples/two_sum.py
+```
+
 Mode interactif pour le terrain:
 
 ```bash
