@@ -21,6 +21,30 @@ npx prisma migrate dev
 npm run dev
 ```
 
+## Docker Prod
+
+Le repo inclut maintenant un [`Dockerfile`](./Dockerfile) pour Dokploy ou tout autre orchestrateur compatible Docker.
+
+Build local:
+
+```bash
+docker build -t code-relay .
+```
+
+Run local:
+
+```bash
+docker run --rm -p 3000:3000 \
+  -e DATABASE_URL=postgresql://code_relay:code_relay@host.docker.internal:5432/code_relay \
+  -e CODE_RELAY_ADMIN_CODE=admin-relay \
+  -e CODE_RELAY_JUDGE_CODE=judge-relay \
+  -e CODE_RELAY_SESSION_SECRET=change-me-in-production \
+  -e NEXT_PUBLIC_APP_URL=https://coderelay.hordeagence.com \
+  code-relay
+```
+
+Au démarrage du conteneur, `prisma migrate deploy` est exécuté automatiquement si `DATABASE_URL` est défini.
+
 ## Variables d'environnement
 
 Copier `.env.example` en `.env` pour Prisma CLI et Next.js. Tu peux aussi dupliquer vers `.env.local` si tu veux surcharger localement l'app web:
