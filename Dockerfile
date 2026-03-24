@@ -20,7 +20,7 @@ COPY . .
 RUN npx prisma generate
 RUN npm run build
 
-FROM base AS runner
+FROM base AS production
 
 ENV NODE_ENV=production
 ENV HOSTNAME=0.0.0.0
