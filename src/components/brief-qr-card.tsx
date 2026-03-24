@@ -5,9 +5,10 @@ import QRCode from "qrcode";
 
 type BriefQrCardProps = {
   url: string;
+  compact?: boolean;
 };
 
-export function BriefQrCard({ url }: BriefQrCardProps) {
+export function BriefQrCard({ url, compact = false }: BriefQrCardProps) {
   const [qrDataUrl, setQrDataUrl] = useState("");
 
   useEffect(() => {
@@ -17,11 +18,11 @@ export function BriefQrCard({ url }: BriefQrCardProps) {
       try {
         const dataUrl = await QRCode.toDataURL(url, {
           errorCorrectionLevel: "M",
-          margin: 1,
+          margin: compact ? 0 : 1,
           scale: 8,
           color: {
             dark: "#0f172a",
-            light: "#f8fafc"
+            light: "#ffffff"
           }
         });
 
@@ -40,7 +41,19 @@ export function BriefQrCard({ url }: BriefQrCardProps) {
     return () => {
       cancelled = true;
     };
-  }, [url]);
+  }, [url, compact]);
+
+  if (compact) {
+    return qrDataUrl ? (
+      <img
+        alt="QR code vers le brief public"
+        className="h-full w-full object-contain mix-blend-multiply"
+        src={qrDataUrl}
+      />
+    ) : (
+      <div className="h-full w-full animate-pulse bg-elevated rounded-lg" />
+    );
+  }
 
   return (
     <div className="rounded-2xl border border-border bg-surface/70 p-5">
@@ -49,7 +62,7 @@ export function BriefQrCard({ url }: BriefQrCardProps) {
         <div className="mt-4 flex items-start gap-4">
           <img
             alt="QR code vers le brief public"
-            className="h-32 w-32 rounded-xl border border-border bg-white p-2"
+            className="h-32 w-32 rounded-xl border border-border bg-white p-2 object-contain"
             height={128}
             src={qrDataUrl}
             width={128}

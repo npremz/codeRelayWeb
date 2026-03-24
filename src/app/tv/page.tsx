@@ -19,16 +19,6 @@ function getPhaseColor(phase: string) {
   }
 }
 
-function getPhaseGlow(phase: string) {
-  switch (phase) {
-    case "reflection": return "rgba(34, 211, 238, 0.15)";
-    case "relay": return "rgba(255, 107, 107, 0.15)";
-    case "paused": return "rgba(255, 212, 59, 0.15)";
-    case "complete": return "rgba(81, 207, 102, 0.15)";
-    default: return "rgba(108, 92, 231, 0.15)";
-  }
-}
-
 function getTimerBg(phase: string) {
   switch (phase) {
     case "reflection": return "bg-cyan";
@@ -36,16 +26,6 @@ function getTimerBg(phase: string) {
     case "paused": return "bg-warn";
     case "complete": return "bg-success";
     default: return "bg-accent";
-  }
-}
-
-function getStatusBadgeClasses(statusLabel: string) {
-  switch (statusLabel) {
-    case "En codage": return "border-hot/20 bg-hot/10 text-hot";
-    case "Soumise": return "border-accent/20 bg-accent/10 text-accent-light";
-    case "Corrigee": return "border-success/20 bg-success/10 text-success";
-    case "Prete": return "border-cyan/20 bg-cyan/10 text-cyan";
-    default: return "border-border bg-elevated text-text-faint";
   }
 }
 
@@ -70,251 +50,190 @@ export default function TvPage() {
   const briefUrl = getPublicBriefUrl();
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-void text-text">
-      {/* Ambient glow */}
-      <div
-        className="pointer-events-none fixed inset-0 transition-all duration-1000"
-        style={{
-          background: `radial-gradient(ellipse at top left, ${getPhaseGlow(relayState.phase)}, transparent 50%), radial-gradient(ellipse at bottom right, rgba(108, 92, 231, 0.08), transparent 40%)`
-        }}
-      />
+    <main className="fixed inset-0 overflow-hidden bg-void text-text flex flex-col">
+      {/* Notifications overlay (if any) */}
+      <div className="shrink-0 z-50">
+        <LiveNotificationBanner notification={notification} />
+      </div>
 
-      <LiveNotificationBanner notification={notification} />
-
-      <div className="relative mx-auto flex min-h-screen w-full max-w-[1800px] flex-col gap-6 px-8 py-6 md:px-10 md:py-8">
-        {/* ── Top bar: Phase + Timer + Round ──────────── */}
-        <header className="flex flex-wrap items-end justify-between gap-5 border-b border-border pb-6">
+      <div className="flex-1 flex flex-col w-full max-w-[1920px] mx-auto p-6 md:p-8 gap-6 min-h-0">
+        
+        {/* ── HEADER (Top Bar) ── */}
+        <header className="shrink-0 flex items-end justify-between border-b border-border pb-4">
           <div>
-            <div className="flex items-center gap-4">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-accent/10 text-accent">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="16 18 22 12 16 6" />
-                  <polyline points="8 6 2 12 8 18" />
-                </svg>
-              </div>
-              <div className="flex items-center gap-3">
-                <p className="text-sm font-semibold uppercase tracking-[0.2em] text-accent-light">Code Relay · Écran TV</p>
-                {currentRound && (
-                  <div className="round-badge">
-                    <span className="round-badge-dot" />
-                    {currentRound.name || `Manche ${currentRound.sequence}`}
-                  </div>
-                )}
-              </div>
+            <div className="flex items-center gap-3 mb-2">
+              <Tv size={20} className="text-accent-light" />
+              <p className="text-sm font-bold uppercase tracking-[0.2em] text-accent-light">Code Relay · TV</p>
+              {currentRound && (
+                <span className="ml-2 rounded-full border border-border bg-elevated px-3 py-1 text-xs font-bold text-text-muted">
+                  {currentRound.name || `Manche ${currentRound.sequence}`}
+                </span>
+              )}
             </div>
-            <h1 className={`mt-3 font-display text-5xl font-bold tracking-tight md:text-7xl lg:text-8xl ${phaseColor}`}>
+            <h1 className={`font-display text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-none ${phaseColor}`}>
               {relayState.phaseLabel}
             </h1>
           </div>
           <div className="text-right">
-            <p className="text-sm uppercase tracking-wider text-text-faint">Temps restant</p>
-            <p className={`mt-1 font-display text-5xl font-bold tracking-tight md:text-7xl lg:text-8xl ${phaseColor} ${isUrgent ? "animate-pulse-glow" : ""}`}>
+            <p className="text-sm font-bold uppercase tracking-[0.2em] text-text-faint mb-2">Temps restant</p>
+            <div className={`font-display text-7xl md:text-8xl lg:text-[7rem] font-black tracking-tighter leading-none tabular-nums ${phaseColor} ${isUrgent ? "animate-pulse text-hot" : ""}`}>
               {formatClock(relayState.remainingMs)}
-            </p>
+            </div>
           </div>
         </header>
 
-        {/* Progress bar */}
-        <div className="h-2 overflow-hidden rounded-full bg-elevated">
-          <div
-            className={`h-full rounded-full transition-all duration-500 ease-linear ${timerBg}`}
-            style={{ width: `${Math.min(100, relayState.progress)}%` }}
+        {/* ── PROGRESS BAR ── */}
+        <div className="shrink-0 h-3 w-full rounded-full bg-elevated border border-border overflow-hidden">
+          <div 
+            className={`h-full transition-all duration-500 ease-linear ${timerBg}`} 
+            style={{ width: `${Math.min(100, relayState.progress)}%` }} 
           />
         </div>
 
-        <section className="grid gap-4 rounded-2xl border border-cyan/20 bg-cyan/5 p-6 md:grid-cols-[1.1fr_0.9fr] md:p-8">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-cyan">Sujet actif</p>
+        {/* ── SUBJECT BAR ── */}
+        <section className="shrink-0 flex justify-between items-center bg-surface border border-border rounded-2xl p-6 shadow-sm">
+          <div className="flex-1 min-w-0 pr-8">
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan mb-2">Sujet Actif</p>
             {subject ? (
-              <>
-                <h2 className="mt-3 font-display text-3xl font-bold tracking-tight text-text md:text-4xl">
-                  {subject.title}
-                </h2>
-                <p className="mt-3 text-sm uppercase tracking-[0.18em] text-text-faint">Fichier à sortir</p>
-                <p className="mt-2 font-display text-3xl font-bold tracking-tight text-cyan md:text-5xl">
-                  {subject.fileName}
-                </p>
-              </>
+              <div>
+                <h2 className="font-display text-4xl font-bold tracking-tight text-text truncate mb-3">{subject.title}</h2>
+                <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xl">
+                  <span className="text-text-muted">Fichier :</span>
+                  <span className="font-mono font-bold text-cyan bg-cyan/10 px-3 py-1 rounded-lg border border-cyan/20">{subject.fileName}</span>
+                  <span className="text-text-muted pl-2">Fonction :</span>
+                  <span className="font-mono font-bold text-cyan bg-cyan/10 px-3 py-1 rounded-lg border border-cyan/20">{subject.functionName}</span>
+                </div>
+              </div>
             ) : (
-              <>
-                <h2 className="mt-3 font-display text-3xl font-bold tracking-tight text-text-faint md:text-4xl">
-                  Sujet en attente
-                </h2>
-                <p className="mt-2 text-base text-text-muted">
-                  L'administrateur n'a pas encore assigné de sujet à cette manche.
-                </p>
-              </>
+              <div>
+                <h2 className="font-display text-4xl font-bold tracking-tight text-text-faint">Sujet en attente</h2>
+                <p className="text-xl text-text-muted mt-2">L'administrateur n'a pas encore assigné de sujet.</p>
+              </div>
             )}
           </div>
-          <div className="space-y-4">
-            <div className="rounded-2xl border border-border bg-surface/70 p-5">
-            <p className="text-xs font-semibold uppercase tracking-wider text-accent-light">Brief public</p>
-            {subject ? (
-              <>
-                <p className="mt-3 text-sm leading-6 text-text-muted">
-                  {subject.brief || "Le brief détaillé est disponible sur la page publique."}
-                </p>
-                <div className="mt-4 space-y-2 text-sm text-text">
-                  <p>Fonction attendue: <span className="font-semibold text-cyan">{subject.functionName}</span></p>
-                  <p>Page brief: <span className="font-semibold text-accent-light">{briefUrl}</span></p>
-                </div>
-              </>
-            ) : (
-              <p className="mt-3 text-sm leading-6 text-text-muted">
-                Le brief sera publié automatiquement dès qu'un sujet sera assigné.
+          <div className="shrink-0 flex items-center gap-6 border-l border-border pl-8">
+            <div className="text-right">
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-text-muted mb-2">Brief Public</p>
+              <p className="font-mono text-base font-bold text-accent-light bg-accent/10 px-3 py-1.5 rounded-lg border border-accent/20">
+                {briefUrl.replace(/^https?:\/\//, '')}
               </p>
-            )}
             </div>
-            <BriefQrCard url={briefUrl} />
+            <div className="bg-white p-2 rounded-xl h-24 w-24 shrink-0 shadow-sm border border-border">
+              <BriefQrCard url={briefUrl} compact={true} />
+            </div>
           </div>
         </section>
 
-        {/* ── Main content grid ──────────────────────── */}
-        <div className="grid flex-1 gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-          {/* Left: Leader + Podium */}
-          <div className="space-y-6">
-            {/* Leader card */}
-            <section className="rounded-2xl border border-accent/20 bg-accent/5 p-6 md:p-8">
-              <p className="text-xs font-semibold uppercase tracking-wider text-accent-light">Leader actuel</p>
+        {/* ── MAIN CONTENT: PODIUM & LEADERBOARD ── */}
+        <div className="flex-1 flex gap-6 min-h-0">
+          
+          {/* Left: Podium (Fixed height) */}
+          <div className="w-[40%] flex flex-col gap-6 min-h-0">
+            {/* Leader */}
+            <div className="flex-1 bg-accent/5 border border-accent/30 rounded-2xl p-6 md:p-8 flex flex-col justify-center text-center relative overflow-hidden">
+              <div className="absolute top-5 left-5 bg-warn text-void font-black text-2xl w-12 h-12 flex items-center justify-center rounded-xl shadow-sm">1</div>
               {leader ? (
-                <div className="mt-4 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
-                  <div className="min-w-0">
-                    <h2 className="font-display text-4xl font-bold tracking-tight text-text md:text-5xl lg:text-6xl truncate">
-                      {leader.name}
-                    </h2>
-                    <p className="mt-2 text-sm text-text-muted">
-                      {leader.station} · {leader.teamCode ?? "NO-CODE"}
-                      {leader.submissionOrder ? ` · Soumission #${leader.submissionOrder}` : " · En course"}
-                    </p>
+                <>
+                  <p className="text-xs font-bold uppercase tracking-[0.3em] text-accent mb-2">Leader Actuel</p>
+                  <h3 className="font-display text-5xl md:text-6xl font-black text-text w-full truncate px-8 mb-4">{leader.name}</h3>
+                  <div className="flex items-center justify-center gap-3 text-xl text-text-muted font-medium mb-8">
+                    <span className="bg-surface px-3 py-1 rounded border border-border">{leader.station}</span>
+                    <span>&bull;</span>
+                    <span className="font-mono text-accent-light">{leader.teamCode ?? "NO-CODE"}</span>
                   </div>
-                  <div className="shrink-0 text-right">
-                    <p className="font-display text-6xl font-bold tracking-tight text-accent-light md:text-7xl">
-                      {leader.totalScore}
-                    </p>
-                    <p className="mt-1 text-sm text-text-faint">/ 100</p>
+                  <div className="mt-auto">
+                    <p className="font-display text-[7rem] font-black text-accent leading-none tabular-nums drop-shadow-sm">{leader.totalScore}</p>
+                    <p className="text-lg font-bold text-accent/50 mt-1">/ 100 points</p>
                   </div>
-                </div>
+                </>
               ) : (
-                <div className="mt-4">
-                  <h2 className="font-display text-4xl font-bold tracking-tight text-text-faint">En attente</h2>
-                  <p className="mt-2 text-base text-text-muted">Aucune équipe classée</p>
+                <div className="flex flex-col items-center justify-center h-full">
+                  <Trophy size={48} className="text-accent/20 mb-4" />
+                  <p className="text-3xl font-bold text-text-faint">En attente</p>
                 </div>
               )}
-            </section>
+            </div>
+            
+            {/* Rank 2 & 3 */}
+            <div className="shrink-0 grid grid-cols-2 gap-6">
+              {teams.slice(1, 3).map(team => (
+                <div key={team.id} className="bg-surface border border-border rounded-2xl p-5 flex flex-col relative shadow-sm">
+                  <div className={`absolute top-4 right-4 font-black text-lg w-8 h-8 flex items-center justify-center rounded-lg ${team.rank === 2 ? 'bg-elevated text-text-muted border border-border' : 'bg-elevated text-amber-600/70 border border-border'}`}>
+                    {team.rank}
+                  </div>
+                  <h4 className="font-display text-2xl font-bold text-text truncate pr-10 mb-1">{team.name}</h4>
+                  <p className="text-sm text-text-muted font-medium mb-6">
+                    {team.station} <span className="mx-1">&bull;</span> <span className="font-mono">{team.teamCode}</span>
+                  </p>
+                  <div className="mt-auto flex items-end justify-between">
+                    <p className="font-display text-5xl font-black text-text tabular-nums leading-none">{team.totalScore}</p>
+                    {team.activeMember && (
+                      <span className="flex h-3 w-3 relative">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-hot opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-3 w-3 bg-hot"></span>
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+              {/* Empty state placeholders to maintain grid structure */}
+              {teams.length < 2 && <div className="bg-elevated/30 border border-border border-dashed rounded-2xl" />}
+              {teams.length < 3 && <div className="bg-elevated/30 border border-border border-dashed rounded-2xl" />}
+            </div>
+          </div>
 
-            {/* Podium top 3 */}
-            <div className="grid gap-4 md:grid-cols-3">
-              {teams.slice(0, 3).map((team) => {
-                const rankEmoji = team.rank === 1 ? <Trophy size={24} className="text-warn" /> : <Medal size={24} className={team.rank === 2 ? "text-text-muted" : "text-hot"} />;
-                const rankBorder = team.rank === 1 ? "border-warn/30" : team.rank === 2 ? "border-text-muted/20" : "border-hot/20";
-                const rankBg = team.rank === 1 ? "bg-warn/5" : team.rank === 2 ? "bg-text-muted/5" : "bg-hot/5";
+          {/* Right: Leaderboard List (Scrollable) */}
+          <div className="w-[60%] flex flex-col bg-surface border border-border rounded-2xl min-h-0 shadow-sm">
+            <div className="shrink-0 px-6 py-4 border-b border-border bg-elevated/50 flex justify-between items-center">
+              <h3 className="font-display font-bold text-xl text-text uppercase tracking-widest">Classement Live</h3>
+              <span className="px-3 py-1 bg-surface border border-border rounded-full text-sm font-bold text-text-muted">
+                {teams.length} équipes
+              </span>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
+              {teams.length === 0 && (
+                <div className="m-auto text-center">
+                  <Tv size={64} className="mx-auto text-border mb-4" />
+                  <p className="text-xl font-medium text-text-muted">En attente de la première équipe</p>
+                </div>
+              )}
+              
+              {teams.map(team => {
+                const isTop3 = team.rank <= 3;
                 return (
-                  <article key={team.id} className={`rounded-2xl border ${rankBorder} ${rankBg} p-5`}>
-                    <div className="flex items-center justify-between">
-                      <span className="flex items-center justify-center h-8 w-8">{rankEmoji}</span>
-                      <span className="font-display text-3xl font-bold tracking-tight text-text">{team.totalScore}</span>
+                  <div key={team.id} className={`flex items-center gap-5 p-4 rounded-xl border ${isTop3 ? 'border-border bg-surface shadow-sm' : 'border-border/50 bg-elevated/30'}`}>
+                    <div className="w-10 shrink-0 text-center font-display font-black text-3xl text-text-muted opacity-50">
+                      {team.rank}
                     </div>
-                    <h3 className="mt-3 font-display text-lg font-bold tracking-tight text-text truncate">{team.name}</h3>
-                    <p className="mt-1 text-sm text-text-faint">
-                      {team.station} · {team.teamCode ?? "NO-CODE"}
-                    </p>
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {team.activeMember ? (
-                        <span className="inline-flex items-center gap-1.5 rounded-lg border border-hot/20 bg-hot/10 px-3 py-1.5 text-xs font-medium text-hot">
-                          <span className="inline-block h-1.5 w-1.5 rounded-full bg-hot animate-pulse-glow" />
-                          {team.activeMember.name}
+                    
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-baseline gap-3 mb-2">
+                        <p className="font-display font-bold text-2xl text-text truncate">{team.name}</p>
+                        <p className="text-sm font-mono text-text-faint">{team.teamCode}</p>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="h-2 flex-1 rounded-full bg-elevated border border-border overflow-hidden">
+                          <div className={`h-full ${timerBg} transition-all duration-500`} style={{width: `${team.progress}%`}} />
+                        </div>
+                        <span className="w-24 shrink-0 text-right text-xs font-bold uppercase tracking-wider text-text-muted">
+                          {getStatusLabel(team.status)}
                         </span>
-                      ) : null}
-                      {team.submissionOrder ? (
-                        <span className="inline-flex items-center rounded-lg border border-success/20 bg-success/10 px-3 py-1.5 text-xs font-medium text-success">
-                          Soumise #{team.submissionOrder}
-                        </span>
-                      ) : null}
+                      </div>
                     </div>
-                  </article>
+                    
+                    <div className={`w-20 shrink-0 text-right font-display font-black text-4xl tabular-nums ${team.rank === 1 ? 'text-warn' : 'text-text'}`}>
+                      {team.totalScore}
+                    </div>
+                  </div>
                 );
               })}
             </div>
           </div>
-
-          {/* Right: Full team list */}
-          <section className="rounded-2xl border border-border bg-surface p-6 md:p-8">
-            <div className="mb-5 flex items-end justify-between gap-4">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-accent-light">Classement</p>
-                <h2 className="mt-1 font-display text-2xl font-bold tracking-tight text-text">Toutes les équipes</h2>
-              </div>
-              <p className="text-sm text-text-faint">{teams.length} équipes</p>
-            </div>
-
-            <div className="space-y-3">
-              {teams.length === 0 && (
-                <div className="flex flex-col items-center py-10 text-center">
-                  <div className="mb-3 text-text-faint/40"><Tv size={48} strokeWidth={1} /></div>
-                  <p className="text-base text-text-muted">En attente des inscriptions.</p>
-                </div>
-              )}
-              {teams.map((team) => {
-                const statusLabel = getStatusLabel(team.status);
-                return (
-                  <article
-                    key={team.id}
-                    className="rounded-xl border border-border bg-elevated/30 p-4 transition-colors"
-                  >
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="flex items-center gap-4 min-w-0">
-                        <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sm font-bold ${
-                          team.rank <= 3
-                            ? team.rank === 1 ? "bg-warn/15 text-warn" : team.rank === 2 ? "bg-text-muted/10 text-text-muted" : "bg-hot/10 text-hot"
-                            : "bg-elevated text-text-faint"
-                        }`}>
-                          {team.rank}
-                        </span>
-                        <div className="min-w-0">
-                          <p className="font-display text-base font-bold tracking-tight text-text truncate">{team.name}</p>
-                          <p className="mt-0.5 text-sm text-text-faint truncate">
-                            {team.teamCode ?? "—"} · {team.members.map((m) => m.name).join(" / ")}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="shrink-0 text-right">
-                        <p className={`font-display text-2xl font-bold tracking-tight ${team.rank === 1 ? "text-warn" : "text-text"}`}>
-                          {team.totalScore}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Progress + status */}
-                    <div className="mt-3 flex items-center gap-4">
-                      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-elevated">
-                        <div
-                          className={`h-full rounded-full transition-all duration-500 ${timerBg}`}
-                          style={{ width: `${team.progress}%` }}
-                        />
-                      </div>
-                      <div className="flex shrink-0 gap-2">
-                        {team.activeMember && (
-                          <span className="inline-flex items-center gap-1.5 rounded-lg border border-hot/20 bg-hot/10 px-2.5 py-1 text-xs font-medium text-hot">
-                            <span className="inline-block h-1.5 w-1.5 rounded-full bg-hot animate-pulse-glow" />
-                            {team.activeMember.name}
-                          </span>
-                        )}
-                        <span className={`inline-flex items-center rounded-lg border px-2.5 py-1 text-xs font-medium ${getStatusBadgeClasses(statusLabel)}`}>
-                          {statusLabel}
-                        </span>
-                      </div>
-                    </div>
-
-                    {team.tieBreakNote && (
-                      <p className="mt-2 text-xs font-medium text-accent-light">{team.tieBreakNote}</p>
-                    )}
-                  </article>
-                );
-              })}
-            </div>
-          </section>
+          
         </div>
       </div>
     </main>
   );
 }
+

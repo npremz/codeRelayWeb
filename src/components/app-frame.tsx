@@ -69,7 +69,7 @@ export function AppFrame({ title, subtitle, children, currentRound }: AppFramePr
           </div>
 
           {/* Navigation - Desktop */}
-          <nav className="hidden md:flex md:items-center md:gap-1.5">
+          <nav className="hidden md:flex md:items-center md:gap-1.5 rounded-2xl bg-surface/60 p-1.5 shadow-sm ring-1 ring-border backdrop-blur-xl">
             {links.map((link) => {
               const active = pathname === link.href;
 
@@ -77,18 +77,42 @@ export function AppFrame({ title, subtitle, children, currentRound }: AppFramePr
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`relative flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-150 overflow-hidden ${
+                  className={`group relative flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-all duration-300 ease-out ${
                     active
-                      ? "bg-accent/15 text-accent-light"
-                      : "text-text-faint hover:bg-elevated hover:text-text-muted"
+                      ? "text-text"
+                      : "text-text-faint hover:text-text-muted"
                   }`}
                   aria-current={active ? "page" : undefined}
                 >
+                  {/* Active Indicator Background */}
                   {active && (
-                    <span className="absolute left-0 top-0 bottom-0 w-1 bg-accent rounded-r-full" aria-hidden="true" />
+                    <span 
+                      className="absolute inset-0 rounded-xl bg-elevated shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] ring-1 ring-border/50" 
+                      aria-hidden="true" 
+                    />
                   )}
-                  <span className={`text-xs ${active ? "opacity-100" : "opacity-70"}`}>{link.icon}</span>
-                  {link.label}
+                  
+                  {/* Tech Notch / Glow Indicator */}
+                  {active && (
+                    <span 
+                      className="absolute -bottom-[6px] left-1/2 h-[3px] w-6 -translate-x-1/2 rounded-t-md bg-accent shadow-[0_-2px_12px_var(--color-accent-glow)]" 
+                      aria-hidden="true" 
+                    />
+                  )}
+
+                  {/* Icon */}
+                  <span className={`relative z-10 flex items-center justify-center transition-all duration-300 ${
+                    active 
+                      ? "text-accent scale-110 drop-shadow-sm" 
+                      : "group-hover:scale-110 group-hover:text-text"
+                  }`}>
+                    {link.icon}
+                  </span>
+
+                  {/* Label */}
+                  <span className={`relative z-10 tracking-wide ${active ? "" : "font-medium"}`}>
+                    {link.label}
+                  </span>
                 </Link>
               );
             })}
@@ -149,18 +173,44 @@ export function AppFrame({ title, subtitle, children, currentRound }: AppFramePr
               <Link
                 key={link.href}
                 href={link.href}
-                className={`relative flex items-center gap-3 rounded-lg px-4 py-3.5 text-base font-medium transition-all duration-150 overflow-hidden ${
+                className={`group relative flex items-center gap-4 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-300 ${
                   active
-                    ? "bg-accent/15 text-accent-light"
-                    : "text-text-faint hover:bg-elevated hover:text-text-muted"
+                    ? "text-text"
+                    : "text-text-faint hover:text-text-muted"
                 }`}
                 aria-current={active ? "page" : undefined}
               >
+                {/* Active Highlight Background */}
                 {active && (
-                  <span className="absolute left-0 top-0 bottom-0 w-1 bg-accent rounded-r-full" aria-hidden="true" />
+                  <span className="absolute inset-0 rounded-xl bg-gradient-to-r from-accent/10 to-transparent" aria-hidden="true" />
                 )}
-                <span className={`text-sm ${active ? "opacity-100" : "opacity-70"}`}>{link.icon}</span>
-                {link.label}
+
+                {/* Cyber Grid Texture */}
+                {active && (
+                  <div className="absolute inset-0 opacity-[0.04] mix-blend-multiply" style={{ backgroundImage: 'radial-gradient(var(--color-accent) 1px, transparent 1px)', backgroundSize: '6px 6px' }} />
+                )}
+
+                {/* Icon Box */}
+                <div className={`relative z-10 flex h-9 w-9 items-center justify-center rounded-lg transition-all duration-300 ${
+                  active 
+                    ? "bg-surface text-accent shadow-sm ring-1 ring-border" 
+                    : "bg-elevated text-text-faint group-hover:bg-surface group-hover:text-text group-hover:ring-1 group-hover:ring-border/50"
+                }`}>
+                  {link.icon}
+                </div>
+                
+                {/* Text */}
+                <span className={`relative z-10 flex-1 tracking-wide ${active ? "font-bold text-text" : "font-semibold"}`}>
+                  {link.label}
+                </span>
+
+                {/* Pulsing Status Dot */}
+                {active && (
+                  <span className="relative z-10 flex h-2 w-2 items-center justify-center">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-75"></span>
+                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-accent"></span>
+                  </span>
+                )}
               </Link>
             );
           })}
