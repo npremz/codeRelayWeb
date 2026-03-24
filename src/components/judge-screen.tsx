@@ -193,6 +193,17 @@ export function JudgeScreen({ staffRole }: JudgeScreenProps) {
                   </span>
                 </span>
               </div>
+              <div className="flex items-start justify-between gap-4">
+                <span className="text-sm text-text-muted">Sujet</span>
+                <div className="text-right">
+                  <p className="text-sm font-semibold text-text">
+                    {currentRound?.subject?.title ?? "Non assigné"}
+                  </p>
+                  <p className="text-xs text-text-faint">
+                    {currentRound?.subject?.fileName ?? "Aucun fichier défini"}
+                  </p>
+                </div>
+              </div>
               {usingDemoData && (
                 <div className="rounded-xl border border-warn/20 bg-warn/5 px-4 py-3 text-sm text-warn">
                   Mode démo actif — les notes ne seront pas reliées à de vraies équipes.

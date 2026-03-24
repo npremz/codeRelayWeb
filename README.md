@@ -30,6 +30,7 @@ DATABASE_URL=postgresql://code_relay:code_relay@localhost:5432/code_relay
 CODE_RELAY_ADMIN_CODE=admin-relay
 CODE_RELAY_JUDGE_CODE=judge-relay
 CODE_RELAY_SESSION_SECRET=change-me-in-production
+NEXT_PUBLIC_APP_URL=https://coderelay.hordeagence.com
 ```
 
 Par defaut en local:
@@ -55,9 +56,11 @@ Le projet livre:
 
 - un design system pour l'univers "control room"
 - un backend PostgreSQL via Prisma pour les equipes, les scores et plusieurs manches
+- un catalogue de sujets charge depuis `relay-judge/subjects` et assignable a chaque manche
 - un flux participant sans login avec code d'equipe et token secret
 - un acces staff protege par code court pour `admin` et `judge`
 - des controles admin reels pour inscriptions, phases, soumissions et manche courante
+- une page publique `/brief` et un affichage `/tv` qui exposent le fichier a rendre et le brief public
 - une base solide pour brancher ensuite du temps reel multi-client
 
 ## Modele multi-manches

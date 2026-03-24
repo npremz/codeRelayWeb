@@ -67,11 +67,20 @@ export type RoundControlState = {
   updatedAt: string;
 };
 
+export type RoundSubject = {
+  id: string;
+  title: string;
+  fileName: string;
+  brief: string;
+  functionName: string;
+};
+
 export type RoundSummary = {
   id: string;
   sequence: number;
   name: string;
   isCurrent: boolean;
+  subject: RoundSubject | null;
   registrationOpen: boolean;
   phase: RoundPhase;
   teamCount: number;
@@ -119,10 +128,16 @@ export type AdminCreateRoundInput = {
   cloneTeams?: boolean;
   teamCodes?: string[];
   makeCurrent?: boolean;
+  subjectId?: string | null;
 };
 
 export type AdminSelectRoundInput = {
   roundId: string;
+};
+
+export type AdminAssignSubjectInput = {
+  roundId?: string;
+  subjectId?: string | null;
 };
 
 export type LiveTeamsResponse = {

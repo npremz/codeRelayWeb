@@ -24,21 +24,26 @@ enum TeamStatus {
 }
 
 model Round {
-  id               String       @id @default(cuid())
-  sequence         Int          @unique
-  name             String
-  isCurrent        Boolean      @default(false)
-  registrationOpen Boolean      @default(true)
-  phase            RoundPhase   @default(DRAFT)
-  previousPhase    RoundPhase?
-  phaseStartedAt   DateTime?
-  pausedElapsedMs  Int?
-  reflectionMs     Int          @default(300000)
-  relaySliceMs     Int          @default(120000)
-  totalRelaySlices Int          @default(12)
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime     @updatedAt
-  entries          RoundEntry[]
+  id                  String       @id @default(cuid())
+  sequence            Int          @unique
+  name                String
+  isCurrent           Boolean      @default(false)
+  subjectId           String?
+  subjectTitle        String?
+  subjectFileName     String?
+  subjectBrief        String?
+  subjectFunctionName String?
+  registrationOpen    Boolean      @default(true)
+  phase               RoundPhase   @default(DRAFT)
+  previousPhase       RoundPhase?
+  phaseStartedAt      DateTime?
+  pausedElapsedMs     Int?
+  reflectionMs        Int          @default(300000)
+  relaySliceMs        Int          @default(120000)
+  totalRelaySlices    Int          @default(12)
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+  entries             RoundEntry[]
 
   @@index([isCurrent])
   @@index([createdAt])

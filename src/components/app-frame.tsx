@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { ReactNode, useState, useEffect } from "react";
 import { RoundSummary } from "@/lib/game-types";
 
-import { Home, UserPlus, ShieldAlert, Settings, Star, BarChart3, Tv } from "lucide-react";
+import { Home, UserPlus, ShieldAlert, Settings, Star, BarChart3, Tv, FileText } from "lucide-react";
 
 const links = [
   { href: "/", label: "Accueil", icon: <Home size={16} /> },
@@ -13,6 +13,7 @@ const links = [
   { href: "/staff", label: "Staff", icon: <ShieldAlert size={16} /> },
   { href: "/admin", label: "Admin", icon: <Settings size={16} /> },
   { href: "/judge", label: "Jury", icon: <Star size={16} /> },
+  { href: "/brief", label: "Brief", icon: <FileText size={16} /> },
   { href: "/results", label: "Résultats", icon: <BarChart3 size={16} /> },
   { href: "/tv", label: "TV", icon: <Tv size={16} /> }
 ];

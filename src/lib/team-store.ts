@@ -11,11 +11,13 @@ import {
 import { canAdminMarkSubmission, canRunAdminRoundAction, defaultRoundState } from "@/lib/demo-game";
 import { prisma } from "@/lib/prisma";
 import {
+  AdminAssignSubjectInput,
   AdminCreateRoundInput,
   AdminRoundAction,
   AdminSelectRoundInput,
   PublicTeam,
   RoundControlState,
+  RoundSubject,
   RoundSummary,
   TeamCreateInput,
   TeamCreateResponse,
@@ -23,6 +25,7 @@ import {
   TeamStatus,
   TeamUpdateInput
 } from "@/lib/game-types";
+import { getPublicSubjectById } from "@/lib/subject-catalog";
 
 const TEAM_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
@@ -199,12 +202,27 @@ function toRoundState(round: PrismaRound): RoundControlState {
   };
 }
 
+function toRoundSubject(round: PrismaRound): RoundSubject | null {
+  if (!round.subjectId || !round.subjectTitle || !round.subjectFileName || !round.subjectFunctionName) {
+    return null;
+  }
+
+  return {
+    id: round.subjectId,
+    title: round.subjectTitle,
+    fileName: round.subjectFileName,
+    brief: round.subjectBrief ?? "",
+    functionName: round.subjectFunctionName
+  };
+}
+
 function toRoundSummary(round: RoundWithCount): RoundSummary {
   return {
     id: round.id,
     sequence: round.sequence,
     name: round.name,
     isCurrent: round.isCurrent,
+    subject: toRoundSubject(round),
     registrationOpen: round.registrationOpen,
     phase: fromDbPhase(round.phase),
     teamCount: round._count.entries,
@@ -683,6 +701,20 @@ function getElapsedForPhase(round: PrismaRound, now: Date) {
   return Math.max(0, now.getTime() - round.phaseStartedAt.getTime());
 }
 
+async function resolveRoundSubjectSnapshot(subjectId: string | null | undefined): Promise<RoundSubject | null> {
+  if (!subjectId) {
+    return null;
+  }
+
+  const subject = await getPublicSubjectById(subjectId);
+
+  if (!subject) {
+    throw new Error("Sujet introuvable.");
+  }
+
+  return subject;
+}
+
 export async function applyAdminRoundAction(action: AdminRoundAction): Promise<RoundControlState> {
   const round = await prisma.$transaction(async (tx) => {
     const currentRound = await ensureCurrentRound(tx);
@@ -720,6 +752,10 @@ export async function applyAdminRoundAction(action: AdminRoundAction): Promise<R
         await setPendingEntriesLocked(tx, currentRound.id, true);
         break;
       case "start_reflection":
+        if (!currentRound.subjectId) {
+          throw new Error("Aucun sujet n'est assigne a cette manche.");
+        }
+
         await tx.round.update({
           where: {
             id: currentRound.id
@@ -862,6 +898,7 @@ export async function markTeamSubmitted(teamCode: string): Promise<PublicTeam | 
 }
 
 export async function createRound(input: AdminCreateRoundInput = {}): Promise<RoundSummary> {
+  const subject = await resolveRoundSubjectSnapshot(input.subjectId);
   const round = await prisma.$transaction(async (tx) => {
     const currentRound = await ensureCurrentRound(tx);
     const nextSequence = await getNextRoundSequence(tx);
@@ -881,6 +918,11 @@ export async function createRound(input: AdminCreateRoundInput = {}): Promise<Ro
         sequence: nextSequence,
         name: input.name?.trim() || `Manche ${nextSequence}`,
         isCurrent: makeCurrent,
+        subjectId: subject?.id ?? null,
+        subjectTitle: subject?.title ?? null,
+        subjectFileName: subject?.fileName ?? null,
+        subjectBrief: subject?.brief ?? null,
+        subjectFunctionName: subject?.functionName ?? null,
         registrationOpen: true,
         phase: PrismaRoundPhase.DRAFT,
         previousPhase: null,
@@ -921,6 +963,44 @@ export async function createRound(input: AdminCreateRoundInput = {}): Promise<Ro
     return tx.round.findUniqueOrThrow({
       where: {
         id: nextRound.id
+      },
+      include: ROUND_WITH_COUNT_INCLUDE
+    });
+  });
+
+  return toRoundSummary(round);
+}
+
+export async function assignRoundSubject(input: AdminAssignSubjectInput): Promise<RoundSummary> {
+  const subject = await resolveRoundSubjectSnapshot(input.subjectId);
+
+  const round = await prisma.$transaction(async (tx) => {
+    const targetRound = input.roundId
+      ? await tx.round.findUnique({
+          where: {
+            id: input.roundId
+          }
+        })
+      : await ensureCurrentRound(tx);
+
+    if (!targetRound) {
+      throw new Error("Manche introuvable.");
+    }
+
+    if (targetRound.phase !== PrismaRoundPhase.DRAFT) {
+      throw new Error("Le sujet ne peut etre modifie que tant que la manche est en preparation.");
+    }
+
+    return tx.round.update({
+      where: {
+        id: targetRound.id
+      },
+      data: {
+        subjectId: subject?.id ?? null,
+        subjectTitle: subject?.title ?? null,
+        subjectFileName: subject?.fileName ?? null,
+        subjectBrief: subject?.brief ?? null,
+        subjectFunctionName: subject?.functionName ?? null
       },
       include: ROUND_WITH_COUNT_INCLUDE
     });

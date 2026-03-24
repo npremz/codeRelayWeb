@@ -4,7 +4,7 @@ import { AppFrame } from "@/components/app-frame";
 import { LiveNotificationBanner } from "@/components/live-notification-banner";
 import { Panel } from "@/components/panel";
 import { PhaseTimer } from "@/components/phase-timer";
-import { AdminRoundAction, RoundSummary } from "@/lib/game-types";
+import { AdminRoundAction, RoundSubject, RoundSummary } from "@/lib/game-types";
 import {
   buildLiveTeams,
   canAdminMarkSubmission,
@@ -43,6 +43,11 @@ export function AdminScreen({ staffRole }: AdminScreenProps) {
   const [newRoundName, setNewRoundName] = useState("");
   const [cloneTeams, setCloneTeams] = useState(false);
   const [makeCurrent, setMakeCurrent] = useState(true);
+  const [subjects, setSubjects] = useState<RoundSubject[]>([]);
+  const [subjectsLoading, setSubjectsLoading] = useState(true);
+  const [selectedSubjectId, setSelectedSubjectId] = useState("");
+  const [newRoundSubjectId, setNewRoundSubjectId] = useState("");
+  const [assigningSubject, setAssigningSubject] = useState(false);
   const [creatingRound, setCreatingRound] = useState(false);
 
   useEffect(() => {
@@ -50,6 +55,44 @@ export function AdminScreen({ staffRole }: AdminScreenProps) {
     const interval = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadSubjects() {
+      try {
+        const response = await fetch("/api/admin/subjects", { cache: "no-store" });
+
+        if (!response.ok) {
+          throw new Error("Impossible de charger les sujets.");
+        }
+
+        const payload = (await response.json()) as { subjects?: RoundSubject[] };
+
+        if (!cancelled) {
+          setSubjects(payload.subjects ?? []);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setMessage(error instanceof Error ? error.message : "Impossible de charger les sujets.");
+        }
+      } finally {
+        if (!cancelled) {
+          setSubjectsLoading(false);
+        }
+      }
+    }
+
+    void loadSubjects();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    setSelectedSubjectId(currentRound?.subject?.id ?? "");
+  }, [currentRound?.id, currentRound?.subject?.id]);
 
   const relayState = getRelayState(round, now);
   const notification = useRoundNotifications(relayState);
@@ -128,7 +171,8 @@ export function AdminScreen({ staffRole }: AdminScreenProps) {
         body: JSON.stringify({
           name: newRoundName.trim() || undefined,
           cloneTeams,
-          makeCurrent
+          makeCurrent,
+          subjectId: newRoundSubjectId || undefined
         })
       });
 
@@ -144,10 +188,46 @@ export function AdminScreen({ staffRole }: AdminScreenProps) {
       setNewRoundName("");
       setCloneTeams(false);
       setMakeCurrent(true);
+      setNewRoundSubjectId("");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Impossible de créer la manche.");
     } finally {
       setCreatingRound(false);
+    }
+  }
+
+  async function handleAssignSubject() {
+    if (!currentRound) {
+      return;
+    }
+
+    setAssigningSubject(true);
+    setMessage("");
+
+    try {
+      const response = await fetch("/api/admin/round/subject", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          roundId: currentRound.id,
+          subjectId: selectedSubjectId || null
+        })
+      });
+
+      const payload = (await response.json()) as { error?: string };
+
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Impossible d'assigner le sujet.");
+      }
+
+      await refresh();
+      setMessage(selectedSubjectId ? "Sujet assigné à la manche." : "Sujet retiré de la manche.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Impossible d'assigner le sujet.");
+    } finally {
+      setAssigningSubject(false);
     }
   }
 
@@ -180,6 +260,10 @@ export function AdminScreen({ staffRole }: AdminScreenProps) {
   }
 
   const isError = message.includes("impossible") || message.includes("requise") || message.includes("Impossible");
+  const selectedSubject = subjects.find((subject) => subject.id === selectedSubjectId) ?? null;
+  const newRoundSubject = subjects.find((subject) => subject.id === newRoundSubjectId) ?? null;
+  const subjectEditingLocked = round.phase !== "draft";
+  const subjectSelectionChanged = selectedSubjectId !== (currentRound?.subject?.id ?? "");
 
   function getRoundPhaseLabel(r: RoundSummary) {
     return getRoundActionLabel(r.phase);
@@ -222,6 +306,11 @@ export function AdminScreen({ staffRole }: AdminScreenProps) {
                     <p className="mt-1 font-display text-xl font-bold tracking-tight text-text">
                       {currentRound.name || `Manche ${currentRound.sequence}`}
                     </p>
+                    <p className="mt-1 text-sm text-text-muted">
+                      {currentRound.subject
+                        ? `${currentRound.subject.title} · ${currentRound.subject.fileName}`
+                        : "Aucun sujet assigné"}
+                    </p>
                   </div>
                   <div className="text-right">
                     <p className="font-display text-3xl font-bold text-accent-light">{currentRound.teamCount}</p>
@@ -254,6 +343,9 @@ export function AdminScreen({ staffRole }: AdminScreenProps) {
                         </p>
                         <p className="text-xs text-text-faint">
                           {getRoundPhaseLabel(r)} · {r.teamCount} équipes
+                        </p>
+                        <p className="text-xs text-text-faint">
+                          {r.subject ? `${r.subject.title} · ${r.subject.fileName}` : "Sujet non défini"}
                         </p>
                       </div>
                     </div>
@@ -295,6 +387,33 @@ export function AdminScreen({ staffRole }: AdminScreenProps) {
                     placeholder="Ex: Demi-finale"
                   />
                 </label>
+                <label className="block">
+                  <span className="mb-2 block text-xs font-bold uppercase tracking-wider text-text-faint">
+                    Sujet (optionnel)
+                  </span>
+                  <select
+                    className="signal-input"
+                    value={newRoundSubjectId}
+                    onChange={(e) => setNewRoundSubjectId(e.target.value)}
+                    disabled={subjectsLoading}
+                  >
+                    <option value="">Aucun sujet pour l'instant</option>
+                    {subjects.map((subject) => (
+                      <option key={subject.id} value={subject.id}>
+                        {subject.title} · {subject.fileName}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                {newRoundSubject && (
+                  <div className="rounded-xl border border-cyan/20 bg-cyan/5 px-4 py-3">
+                    <p className="text-sm font-bold text-cyan">{newRoundSubject.title}</p>
+                    <p className="mt-1 text-sm text-text">Fichier: {newRoundSubject.fileName}</p>
+                    <p className="mt-1 text-xs text-text-muted">
+                      Fonction: {newRoundSubject.functionName}
+                    </p>
+                  </div>
+                )}
                 <label className="flex items-center gap-3 cursor-pointer">
                   <input
                     type="checkbox"
@@ -336,6 +455,91 @@ export function AdminScreen({ staffRole }: AdminScreenProps) {
                     Annuler
                   </button>
                 </div>
+              </div>
+            )}
+          </Panel>
+
+          <Panel accent="cyan" eyebrow="Sujet" title="Sujet de la manche">
+            {subjectsLoading ? (
+              <p className="text-sm text-text-muted">Chargement du catalogue des sujets...</p>
+            ) : (
+              <div className="space-y-4">
+                <div className="rounded-xl border border-cyan/20 bg-cyan/5 px-4 py-4">
+                  <p className="text-xs font-bold uppercase tracking-wider text-cyan">Sujet actuel</p>
+                  {currentRound?.subject ? (
+                    <>
+                      <p className="mt-2 font-display text-xl font-bold tracking-tight text-text">
+                        {currentRound.subject.title}
+                      </p>
+                      <p className="mt-1 text-sm text-text">Fichier: {currentRound.subject.fileName}</p>
+                      <p className="mt-1 text-xs text-text-muted">
+                        Fonction: {currentRound.subject.functionName}
+                      </p>
+                      {currentRound.subject.brief && (
+                        <p className="mt-3 text-sm leading-6 text-text-muted">{currentRound.subject.brief}</p>
+                      )}
+                    </>
+                  ) : (
+                    <p className="mt-2 text-sm text-text-muted">Aucun sujet n'est encore assigné à cette manche.</p>
+                  )}
+                </div>
+
+                <label className="block">
+                  <span className="mb-2 block text-xs font-bold uppercase tracking-wider text-text-faint">
+                    Choisir un sujet
+                  </span>
+                  <select
+                    className="signal-input"
+                    value={selectedSubjectId}
+                    onChange={(e) => setSelectedSubjectId(e.target.value)}
+                    disabled={!currentRound || assigningSubject}
+                  >
+                    <option value="">Aucun sujet</option>
+                    {subjects.map((subject) => (
+                      <option key={subject.id} value={subject.id}>
+                        {subject.title} · {subject.fileName}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                {selectedSubject && (
+                  <div className="rounded-xl border border-border bg-elevated/30 px-4 py-4">
+                    <p className="text-sm font-bold text-text">{selectedSubject.title}</p>
+                    <p className="mt-1 text-sm text-text-muted">Fichier attendu: {selectedSubject.fileName}</p>
+                    <p className="mt-1 text-xs text-text-faint">
+                      Fonction: {selectedSubject.functionName}
+                    </p>
+                    {selectedSubject.brief && (
+                      <p className="mt-3 text-sm leading-6 text-text-muted">{selectedSubject.brief}</p>
+                    )}
+                  </div>
+                )}
+
+                <div className="flex flex-wrap gap-3">
+                  <button
+                    className="signal-button"
+                    onClick={handleAssignSubject}
+                    disabled={!currentRound || assigningSubject || !subjectSelectionChanged || subjectEditingLocked}
+                    type="button"
+                  >
+                    {assigningSubject ? "Mise à jour..." : selectedSubjectId ? "Assigner le sujet" : "Retirer le sujet"}
+                  </button>
+                  <a
+                    className="ghost-button"
+                    href="/brief"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Ouvrir le brief public
+                  </a>
+                </div>
+
+                <p className={`text-xs ${subjectEditingLocked ? "text-warn" : "text-text-faint"}`}>
+                  {subjectEditingLocked
+                    ? "Le sujet est verrouillé dès que la manche quitte l'état de préparation."
+                    : "Le sujet peut encore être modifié tant que la réflexion n'a pas commencé."}
+                </p>
               </div>
             )}
           </Panel>

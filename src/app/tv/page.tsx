@@ -1,7 +1,9 @@
 "use client";
 
+import { BriefQrCard } from "@/components/brief-qr-card";
 import { LiveNotificationBanner } from "@/components/live-notification-banner";
 import { buildLiveTeams, formatClock, getRelayState, getStatusLabel } from "@/lib/demo-game";
+import { getPublicBriefUrl } from "@/lib/public-brief";
 import { useRoundNotifications } from "@/lib/use-round-notifications";
 import { useLiveTeams } from "@/lib/use-live-teams";
 import { useEffect, useState } from "react";
@@ -64,6 +66,8 @@ export default function TvPage() {
   const isUrgent = relayState.isRunning && relayState.remainingMs > 0 && relayState.remainingMs <= 30000;
   const phaseColor = getPhaseColor(relayState.phase);
   const timerBg = getTimerBg(relayState.phase);
+  const subject = currentRound?.subject ?? null;
+  const briefUrl = getPublicBriefUrl();
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-void text-text">
@@ -117,6 +121,53 @@ export default function TvPage() {
             style={{ width: `${Math.min(100, relayState.progress)}%` }}
           />
         </div>
+
+        <section className="grid gap-4 rounded-2xl border border-cyan/20 bg-cyan/5 p-6 md:grid-cols-[1.1fr_0.9fr] md:p-8">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-cyan">Sujet actif</p>
+            {subject ? (
+              <>
+                <h2 className="mt-3 font-display text-3xl font-bold tracking-tight text-text md:text-4xl">
+                  {subject.title}
+                </h2>
+                <p className="mt-3 text-sm uppercase tracking-[0.18em] text-text-faint">Fichier à sortir</p>
+                <p className="mt-2 font-display text-3xl font-bold tracking-tight text-cyan md:text-5xl">
+                  {subject.fileName}
+                </p>
+              </>
+            ) : (
+              <>
+                <h2 className="mt-3 font-display text-3xl font-bold tracking-tight text-text-faint md:text-4xl">
+                  Sujet en attente
+                </h2>
+                <p className="mt-2 text-base text-text-muted">
+                  L'administrateur n'a pas encore assigné de sujet à cette manche.
+                </p>
+              </>
+            )}
+          </div>
+          <div className="space-y-4">
+            <div className="rounded-2xl border border-border bg-surface/70 p-5">
+            <p className="text-xs font-semibold uppercase tracking-wider text-accent-light">Brief public</p>
+            {subject ? (
+              <>
+                <p className="mt-3 text-sm leading-6 text-text-muted">
+                  {subject.brief || "Le brief détaillé est disponible sur la page publique."}
+                </p>
+                <div className="mt-4 space-y-2 text-sm text-text">
+                  <p>Fonction attendue: <span className="font-semibold text-cyan">{subject.functionName}</span></p>
+                  <p>Page brief: <span className="font-semibold text-accent-light">{briefUrl}</span></p>
+                </div>
+              </>
+            ) : (
+              <p className="mt-3 text-sm leading-6 text-text-muted">
+                Le brief sera publié automatiquement dès qu'un sujet sera assigné.
+              </p>
+            )}
+            </div>
+            <BriefQrCard url={briefUrl} />
+          </div>
+        </section>
 
         {/* ── Main content grid ──────────────────────── */}
         <div className="grid flex-1 gap-6 xl:grid-cols-[1.2fr_0.8fr]">
