@@ -274,6 +274,8 @@ export function AdminScreen({ staffRole }: AdminScreenProps) {
       title="Pilotage"
       subtitle="Tableau de bord organisateur"
       currentRound={currentRound}
+      navigation="staff"
+      staffRole={staffRole}
     >
       <LiveNotificationBanner notification={notification} />
 

@@ -10,7 +10,7 @@ import { useRoundNotifications } from "@/lib/use-round-notifications";
 import { useLiveTeams } from "@/lib/use-live-teams";
 import { useEffect, useState } from "react";
 
-import { UserPlus, Settings, Star, BarChart3, Tv, BookOpen, Trophy } from "lucide-react";
+import { UserPlus, BarChart3, BookOpen, Trophy, FileText } from "lucide-react";
 
 const screens = [
   {
@@ -20,28 +20,16 @@ const screens = [
     icon: <UserPlus size={20} />
   },
   {
-    href: "/admin",
-    label: "Pilotage",
-    desc: "Contrôle de la timeline et des stations",
-    icon: <Settings size={20} />
-  },
-  {
-    href: "/judge",
-    label: "Notation",
-    desc: "Évaluer les équipes selon le barème",
-    icon: <Star size={20} />
+    href: "/brief",
+    label: "Brief",
+    desc: "Consulter l'énoncé public et le fichier attendu",
+    icon: <FileText size={20} />
   },
   {
     href: "/results",
     label: "Résultats",
     desc: "Classement public avec tie-break",
     icon: <BarChart3 size={20} />
-  },
-  {
-    href: "/tv",
-    label: "Écran TV",
-    desc: "Affichage grand écran pour le public",
-    icon: <Tv size={20} />
   }
 ];
 

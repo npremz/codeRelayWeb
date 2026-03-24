@@ -84,6 +84,8 @@ export function JudgeScreen({ staffRole }: JudgeScreenProps) {
         title="Notation"
         subtitle="Cockpit de notation du jury"
         currentRound={currentRound}
+        navigation="staff"
+        staffRole={staffRole}
       >
         <Panel accent="warn" eyebrow="File d'attente" title="Aucune équipe">
           <div className="flex flex-col items-center py-10 text-center">
@@ -172,6 +174,8 @@ export function JudgeScreen({ staffRole }: JudgeScreenProps) {
       title="Notation"
       subtitle="Cockpit de notation du jury"
       currentRound={currentRound}
+      navigation="staff"
+      staffRole={staffRole}
     >
       <div className="grid gap-6 xl:grid-cols-[0.7fr_1.3fr]">
         {/* ── Left column: Session + Team selector ──── */}

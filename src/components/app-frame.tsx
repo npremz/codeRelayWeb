@@ -5,29 +5,46 @@ import { usePathname } from "next/navigation";
 import { ReactNode, useState, useEffect } from "react";
 import { RoundSummary } from "@/lib/game-types";
 
-import { Home, UserPlus, ShieldAlert, Settings, Star, BarChart3, Tv, FileText } from "lucide-react";
+import { Home, UserPlus, Settings, Star, BarChart3, Tv, FileText, ShieldAlert } from "lucide-react";
 
-const links = [
+const publicLinks = [
   { href: "/", label: "Accueil", icon: <Home size={16} /> },
   { href: "/register", label: "Inscription", icon: <UserPlus size={16} /> },
-  { href: "/staff", label: "Staff", icon: <ShieldAlert size={16} /> },
-  { href: "/admin", label: "Admin", icon: <Settings size={16} /> },
-  { href: "/judge", label: "Jury", icon: <Star size={16} /> },
   { href: "/brief", label: "Brief", icon: <FileText size={16} /> },
   { href: "/results", label: "Résultats", icon: <BarChart3 size={16} /> },
+  { href: "/staff", label: "Staff", icon: <ShieldAlert size={16} /> }
+];
+
+const adminLinks = [
+  { href: "/admin", label: "Admin", icon: <Settings size={16} /> },
+  { href: "/judge", label: "Jury", icon: <Star size={16} /> },
   { href: "/tv", label: "TV", icon: <Tv size={16} /> }
 ];
+
+const judgeLinks = [
+  { href: "/judge", label: "Jury", icon: <Star size={16} /> }
+];
+
+type StaffRole = "admin" | "judge";
 
 type AppFrameProps = {
   title: string;
   subtitle: string;
   children: ReactNode;
   currentRound?: RoundSummary | null;
+  navigation?: "public" | "staff";
+  staffRole?: StaffRole;
 };
 
-export function AppFrame({ title, subtitle, children, currentRound }: AppFrameProps) {
+export function AppFrame({ title, subtitle, children, currentRound, navigation = "public", staffRole }: AppFrameProps) {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const links = navigation === "staff"
+    ? [
+        ...publicLinks,
+        ...(staffRole === "admin" ? adminLinks : judgeLinks)
+      ]
+    : publicLinks;
 
   // Close mobile menu when navigating
   useEffect(() => {
