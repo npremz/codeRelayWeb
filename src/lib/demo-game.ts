@@ -12,7 +12,7 @@ type RankComparableTeam = Pick<LiveTeam, "totalScore" | "scoreCard" | "submissio
 
 export const REFLECTION_MS = 5 * 60 * 1000;
 export const RELAY_SLICE_MS = 2 * 60 * 1000;
-export const RELAY_SLICES = 8;
+export const RELAY_SLICES = 12;
 
 export const defaultRoundState: RoundControlState = {
   registrationOpen: true,
