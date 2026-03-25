@@ -677,6 +677,14 @@ export function AdminScreen({ staffRole }: AdminScreenProps) {
                 <span className="text-sm text-text-muted">Équipes</span>
                 <span className="font-display text-xl font-bold text-text">{storedTeams.length}</span>
               </div>
+              <div className="pt-2">
+                <a
+                  className="ghost-button w-full"
+                  href="/judge"
+                >
+                  Ouvrir le jury
+                </a>
+              </div>
             </div>
           </Panel>
 

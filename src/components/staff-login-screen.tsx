@@ -34,6 +34,13 @@ export function StaffLoginScreen({ preferredRole, nextPath }: StaffLoginScreenPr
     [selectedRole]
   );
 
+  const redirectPath =
+    selectedRole === preferredRole
+      ? nextPath
+      : selectedRole === "admin"
+        ? "/admin"
+        : "/judge";
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setBusy(true);
@@ -48,7 +55,7 @@ export function StaffLoginScreen({ preferredRole, nextPath }: StaffLoginScreenPr
         body: JSON.stringify({
           role: selectedRole,
           code,
-          nextPath
+          nextPath: redirectPath
         })
       });
 
@@ -124,6 +131,10 @@ export function StaffLoginScreen({ preferredRole, nextPath }: StaffLoginScreenPr
             {/* Role description */}
             <div className="rounded-xl border border-accent/15 bg-accent/5 px-4 py-3 text-sm text-accent-light">
               {roleConfig.icon} {roleConfig.hint}
+            </div>
+
+            <div className="rounded-xl border border-border bg-elevated/30 px-4 py-3 text-sm text-text-muted">
+              Redirection après connexion: <span className="font-semibold text-text">{redirectPath}</span>
             </div>
 
             {/* Code input */}
