@@ -140,6 +140,10 @@ export type AdminAssignSubjectInput = {
   subjectId?: string | null;
 };
 
+
+export type AdminResetEventInput = {
+  confirmationText: string;
+};
 export type LiveTeamsResponse = {
   teams: PublicTeam[];
   round: RoundControlState;

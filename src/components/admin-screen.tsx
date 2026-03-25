@@ -49,6 +49,7 @@ export function AdminScreen({ staffRole }: AdminScreenProps) {
   const [newRoundSubjectId, setNewRoundSubjectId] = useState("");
   const [assigningSubject, setAssigningSubject] = useState(false);
   const [creatingRound, setCreatingRound] = useState(false);
+  const [resettingEvent, setResettingEvent] = useState(false);
 
   useEffect(() => {
     setNow(Date.now());
@@ -259,11 +260,70 @@ export function AdminScreen({ staffRole }: AdminScreenProps) {
     }
   }
 
-  const isError = message.includes("impossible") || message.includes("requise") || message.includes("Impossible");
+  async function handleResetEventData() {
+    const confirmationText = window.prompt(
+      "Cette action supprime toutes les manches, equipes, soumissions et scores. Tape RESET pour confirmer."
+    );
+
+    if (confirmationText === null) {
+      return;
+    }
+
+    if (confirmationText.trim().toUpperCase() !== "RESET") {
+      setMessage("Reinitialisation annulee: confirmation invalide.");
+      return;
+    }
+
+    const confirmed = window.confirm(
+      "Confirmer la reinitialisation complete pour preparer une nouvelle edition ?"
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setResettingEvent(true);
+    setMessage("");
+
+    try {
+      const response = await fetch("/api/admin/event-data", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ confirmationText })
+      });
+
+      const payload = (await response.json()) as { error?: string };
+
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Impossible de reinitialiser l'edition.");
+      }
+
+      await refresh();
+      setShowCreateRound(false);
+      setNewRoundName("");
+      setCloneTeams(false);
+      setMakeCurrent(true);
+      setNewRoundSubjectId("");
+      setMessage("Nouvelle edition prete: toutes les donnees precedentes ont ete supprimees.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Impossible de reinitialiser l'edition.");
+    } finally {
+      setResettingEvent(false);
+    }
+  }
+
+  const isError =
+    message.includes("impossible") ||
+    message.includes("requise") ||
+    message.includes("Impossible") ||
+    message.includes("invalide");
   const selectedSubject = subjects.find((subject) => subject.id === selectedSubjectId) ?? null;
   const newRoundSubject = subjects.find((subject) => subject.id === newRoundSubjectId) ?? null;
   const subjectEditingLocked = round.phase !== "draft";
   const subjectSelectionChanged = selectedSubjectId !== (currentRound?.subject?.id ?? "");
+  const adminBusy = busyAction !== null || creatingRound || assigningSubject || resettingEvent;
 
   function getRoundPhaseLabel(r: RoundSummary) {
     return getRoundActionLabel(r.phase);
@@ -355,7 +415,7 @@ export function AdminScreen({ staffRole }: AdminScreenProps) {
                       <button
                         className="rounded-lg border border-accent/20 bg-accent/10 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-accent-light transition-all hover:bg-accent/20 disabled:opacity-40"
                         onClick={() => handleSwitchRound(r.id)}
-                        disabled={busyAction !== null}
+                        disabled={adminBusy}
                         type="button"
                       >
                         {busyAction === `switch-${r.id}` ? "..." : "Activer"}
@@ -371,6 +431,7 @@ export function AdminScreen({ staffRole }: AdminScreenProps) {
               <button
                 className="ghost-button w-full"
                 onClick={() => setShowCreateRound(true)}
+                disabled={resettingEvent}
                 type="button"
               >
                 + Créer une nouvelle manche
@@ -438,7 +499,7 @@ export function AdminScreen({ staffRole }: AdminScreenProps) {
                   <button
                     className="signal-button flex-1 relative"
                     onClick={handleCreateRound}
-                    disabled={creatingRound}
+                    disabled={creatingRound || resettingEvent}
                     type="button"
                   >
                     {creatingRound && (
@@ -452,6 +513,7 @@ export function AdminScreen({ staffRole }: AdminScreenProps) {
                   <button
                     className="ghost-button"
                     onClick={() => setShowCreateRound(false)}
+                    disabled={creatingRound || resettingEvent}
                     type="button"
                   >
                     Annuler
@@ -459,6 +521,22 @@ export function AdminScreen({ staffRole }: AdminScreenProps) {
                 </div>
               </div>
             )}
+
+            <div className="mt-5 rounded-xl border border-hot/20 bg-hot/5 px-5 py-4">
+              <p className="text-xs font-bold uppercase tracking-wider text-hot">Nouvelle edition</p>
+              <p className="mt-2 text-sm leading-6 text-text-muted">
+                Si l'evenement repart de zero avec d'autres equipes, cette action supprime toutes les manches,
+                inscriptions, soumissions et scores, puis recree une manche initiale vide.
+              </p>
+              <button
+                className="mt-4 rounded-lg border border-hot/30 bg-hot/10 px-4 py-2 text-sm font-bold text-hot transition-all hover:bg-hot/20 disabled:cursor-not-allowed disabled:opacity-40"
+                onClick={handleResetEventData}
+                disabled={adminBusy}
+                type="button"
+              >
+                {resettingEvent ? "Reinitialisation..." : "Reinitialiser pour une nouvelle edition"}
+              </button>
+            </div>
           </Panel>
 
           <Panel accent="cyan" eyebrow="Sujet" title="Sujet de la manche">
@@ -522,7 +600,7 @@ export function AdminScreen({ staffRole }: AdminScreenProps) {
                   <button
                     className="signal-button"
                     onClick={handleAssignSubject}
-                    disabled={!currentRound || assigningSubject || !subjectSelectionChanged || subjectEditingLocked}
+                    disabled={!currentRound || assigningSubject || resettingEvent || !subjectSelectionChanged || subjectEditingLocked}
                     type="button"
                   >
                     {assigningSubject ? "Mise à jour..." : selectedSubjectId ? "Assigner le sujet" : "Retirer le sujet"}
@@ -594,7 +672,7 @@ export function AdminScreen({ staffRole }: AdminScreenProps) {
                   <button
                     key={action}
                     className="group flex items-center gap-3 rounded-xl border border-border bg-elevated/50 px-4 py-4 text-left transition-all hover:border-border-hover hover:bg-elevated disabled:opacity-40 disabled:cursor-not-allowed"
-                    disabled={busyAction !== null || !isAllowed}
+                    disabled={adminBusy || !isAllowed}
                     onClick={() => runRoundAction(action)}
                     type="button"
                   >

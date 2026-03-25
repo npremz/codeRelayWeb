@@ -84,6 +84,7 @@ Le projet livre:
 - un flux participant sans login avec code d'equipe et token secret
 - un acces staff protege par code court pour `admin` et `judge`
 - des controles admin reels pour inscriptions, phases, soumissions et manche courante
+- une action admin de reinitialisation complete pour repartir sur une nouvelle edition
 - une page publique `/brief` et un affichage `/tv` qui exposent le fichier a rendre et le brief public
 - une base solide pour brancher ensuite du temps reel multi-client
 

@@ -13,6 +13,7 @@ import { prisma } from "@/lib/prisma";
 import {
   AdminAssignSubjectInput,
   AdminCreateRoundInput,
+  AdminResetEventInput,
   AdminRoundAction,
   AdminSelectRoundInput,
   PublicTeam,
@@ -351,6 +352,8 @@ async function ensureCurrentRound(client: StoreClient) {
     });
   }
 }
+
+const RESET_EVENT_CONFIRMATION_TEXT = "RESET";
 
 async function listAllTeamCodes(client: StoreClient) {
   const teams = await client.team.findMany({
@@ -1046,3 +1049,25 @@ export async function setCurrentRound(input: AdminSelectRoundInput): Promise<Rou
 
   return toRoundSummary(round);
 }
+
+export async function resetEventData(input: AdminResetEventInput): Promise<RoundSummary> {
+  const confirmationText = input.confirmationText?.trim().toUpperCase();
+
+  if (confirmationText !== RESET_EVENT_CONFIRMATION_TEXT) {
+    throw new Error(`Confirmation invalide. Tape ${RESET_EVENT_CONFIRMATION_TEXT} pour continuer.`);
+  }
+
+  const round = await prisma.$transaction(async (tx) => {
+    await tx.round.deleteMany();
+    await tx.team.deleteMany();
+
+    const initialRound = await createInitialRound(tx);
+
+    return tx.round.findUniqueOrThrow({
+      where: {
+        id: initialRound.id
+      },
+      include: ROUND_WITH_COUNT_INCLUDE
+    });
+  });
+
