@@ -15,7 +15,7 @@ function getPhaseConfig(state: RelayState) {
         accent: "cyan" as const,
         icon: <MessageCircle size={24} className="text-cyan" />,
         statusLabel: "Réflexion en cours",
-        hint: "Les 3 membres discutent et préparent leur stratégie",
+        hint: "Les membres discutent et préparent leur stratégie",
         timerColor: "text-cyan",
         barColor: "bg-cyan",
         bgTint: "bg-cyan/5"

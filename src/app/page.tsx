@@ -97,7 +97,7 @@ export default function HomePage() {
                   Code Relay
                 </h2>
                 <p className="mt-2 text-base text-text-muted">
-                  3 joueurs · 5 min de réflexion · Relais de 2 min · Silence total au clavier
+                  2 à 4 joueurs · 5 min de réflexion · Relais de 2 min · Silence total au clavier
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-4">
@@ -137,7 +137,7 @@ export default function HomePage() {
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="mt-0.5 text-cyan">→</span>
-                      Relais de 2 min par joueur, ordre fixe A → B → C
+                      Relais de 2 min par joueur, ordre fixe selon la composition de l&apos;équipe
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="mt-0.5 text-cyan">→</span>

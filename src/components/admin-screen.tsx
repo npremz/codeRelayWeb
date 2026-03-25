@@ -784,7 +784,7 @@ export function AdminScreen({ staffRole }: AdminScreenProps) {
                     </div>
 
                     {/* Member cards */}
-                    <div className="mt-4 grid grid-cols-3 gap-3">
+                    <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                       {team.members.map((member) => {
                         const isActive = team.activeMember?.id === member.id;
                         return (
@@ -800,7 +800,8 @@ export function AdminScreen({ staffRole }: AdminScreenProps) {
                               isActive ? "text-hot" :
                               member.relayOrder === 1 ? "text-hot/50" :
                               member.relayOrder === 2 ? "text-cyan/50" :
-                              "text-accent-light/50"
+                              member.relayOrder === 3 ? "text-accent-light/50" :
+                              "text-success/60"
                             }`}>
                               Relais {member.relayOrder}
                             </p>

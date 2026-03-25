@@ -109,6 +109,14 @@ export const demoTeams: TeamSeed[] = [
   }
 ];
 
+function getActiveRelayOrderForTeam(memberCount: number, currentSlice: number) {
+  if (memberCount <= 0) {
+    return null;
+  }
+
+  return (currentSlice % memberCount) + 1;
+}
+
 export function canRunAdminRoundAction(round: RoundControlState, action: AdminRoundAction): boolean {
   switch (action) {
     case "open_registration":
@@ -204,7 +212,7 @@ export function getRelayState(round: RoundControlState, now = Date.now()): Relay
     remainingMs: Math.max(round.relaySliceMs - sliceElapsedMs, 0),
     totalMs: relayTotalMs,
     currentSlice,
-    activeRelayOrder: (currentSlice % 3) + 1,
+    activeRelayOrder: currentSlice + 1,
     phaseLabel: round.phase === "paused" ? "Pause pendant relais" : "Codage relais",
     progress: relayTotalMs === 0 ? 0 : Math.round((boundedElapsedMs / relayTotalMs) * 100),
     isRunning: round.phase !== "paused"
@@ -281,9 +289,10 @@ export function buildLiveTeams(seeds: TeamSeed[], state: RelayState): LiveTeam[]
   const liveTeams = seeds.map<UnrankedLiveTeam>((team) => {
     const submissionIndex = submittedTeamIds.indexOf(team.id);
     const submissionOrder = submissionIndex >= 0 ? submissionIndex + 1 : null;
+    const activeRelayOrder = getActiveRelayOrderForTeam(team.members.length, state.currentSlice);
     const activeMember =
       (state.phase === "relay" || (state.phase === "paused" && state.activeRelayOrder !== null)) && submissionOrder === null
-        ? team.members.find((member) => member.relayOrder === state.activeRelayOrder) ?? null
+        ? team.members.find((member) => member.relayOrder === activeRelayOrder) ?? null
         : null;
     const progress =
       submissionOrder !== null

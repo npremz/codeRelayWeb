@@ -4,6 +4,10 @@ export type RoundPhase = "draft" | ResumeRoundPhase | "paused" | "complete";
 
 export type TeamStatus = "registered" | "ready" | "coding" | "submitted" | "scored";
 
+export const MIN_TEAM_MEMBERS = 2;
+export const MAX_TEAM_MEMBERS = 4;
+export const RELAY_SEAT_LABELS = ["A", "B", "C", "D"] as const;
+
 export type TeamMember = {
   id: string;
   name: string;
@@ -140,10 +144,10 @@ export type AdminAssignSubjectInput = {
   subjectId?: string | null;
 };
 
-
 export type AdminResetEventInput = {
   confirmationText: string;
 };
+
 export type LiveTeamsResponse = {
   teams: PublicTeam[];
   round: RoundControlState;

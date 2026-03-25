@@ -13,22 +13,6 @@ export type LiveNotification = {
 const DISPLAY_MS = 4500;
 const WARNING_THRESHOLD_MS = 10000;
 
-function getRelaySeatLabel(order: number | null) {
-  if (order === 1) {
-    return "A";
-  }
-
-  if (order === 2) {
-    return "B";
-  }
-
-  if (order === 3) {
-    return "C";
-  }
-
-  return null;
-}
-
 export function useRoundNotifications(state: RelayState) {
   const [notification, setNotification] = useState<LiveNotification | null>(null);
   const previousStateRef = useRef<RelayState | null>(null);
@@ -86,14 +70,13 @@ export function useRoundNotifications(state: RelayState) {
         showNotification({
           tone: "lime",
           title: "Reflexion lancee",
-          message: "Les 3 membres peuvent encore discuter pendant 5 minutes."
+          message: "Les membres peuvent encore discuter pendant 5 minutes."
         });
       } else if (state.phase === "relay") {
-        const relaySeat = getRelaySeatLabel(state.activeRelayOrder);
         showNotification({
           tone: "signal",
           title: previousState.phase === "paused" ? "Relais repris" : "Relais lance",
-          message: relaySeat ? `Joueur ${relaySeat} au clavier. Silence total.` : "Le relais est en cours."
+          message: "Un joueur par equipe est au clavier. Silence total."
         });
       } else if (state.phase === "paused") {
         showNotification({
@@ -109,11 +92,10 @@ export function useRoundNotifications(state: RelayState) {
         });
       }
     } else if (state.phase === "relay" && previousState.currentSlice !== state.currentSlice) {
-      const relaySeat = getRelaySeatLabel(state.activeRelayOrder);
       showNotification({
         tone: "signal",
         title: "Rotation",
-        message: relaySeat ? `Fin de tranche. Joueur ${relaySeat} prend le clavier.` : "Fin de tranche."
+        message: "Fin de tranche. Rotation des joueurs au clavier."
       });
     }
 

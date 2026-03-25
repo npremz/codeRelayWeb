@@ -16,6 +16,8 @@ import {
   AdminResetEventInput,
   AdminRoundAction,
   AdminSelectRoundInput,
+  MAX_TEAM_MEMBERS,
+  MIN_TEAM_MEMBERS,
   PublicTeam,
   RoundControlState,
   RoundSubject,
@@ -178,8 +180,12 @@ function normalizeNames(input: TeamCreateInput) {
     throw new Error("Le nom d'equipe doit contenir au moins 2 caracteres.");
   }
 
-  if (members.length !== 3 || members.some((member) => member.length < 2)) {
-    throw new Error("Il faut exactement 3 membres avec un nom valide.");
+  if (
+    members.length < MIN_TEAM_MEMBERS ||
+    members.length > MAX_TEAM_MEMBERS ||
+    members.some((member) => member.length < 2)
+  ) {
+    throw new Error(`Il faut entre ${MIN_TEAM_MEMBERS} et ${MAX_TEAM_MEMBERS} membres avec un nom valide.`);
   }
 
   return { name, members };
@@ -1071,3 +1077,5 @@ export async function resetEventData(input: AdminResetEventInput): Promise<Round
     });
   });
 
+  return toRoundSummary(round);
+}

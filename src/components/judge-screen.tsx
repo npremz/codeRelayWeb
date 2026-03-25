@@ -390,7 +390,8 @@ export function JudgeScreen({ staffRole }: JudgeScreenProps) {
                       <p className={`text-xs font-bold uppercase tracking-wider ${
                         member.relayOrder === 1 ? "text-hot" :
                         member.relayOrder === 2 ? "text-cyan" :
-                        "text-accent-light"
+                        member.relayOrder === 3 ? "text-accent-light" :
+                        "text-success"
                       }`}>
                         Relais {member.relayOrder}
                       </p>

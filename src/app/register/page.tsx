@@ -4,14 +4,27 @@ import Link from "next/link";
 import { AppFrame } from "@/components/app-frame";
 import { Panel } from "@/components/panel";
 import { getStoredTeamAccess, storeTeamAccess } from "@/lib/team-access";
-import { TeamCreateResponse } from "@/lib/game-types";
+import { MAX_TEAM_MEMBERS, MIN_TEAM_MEMBERS, RELAY_SEAT_LABELS, TeamCreateResponse } from "@/lib/game-types";
 import { useLiveTeams } from "@/lib/use-live-teams";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Key, Users } from "lucide-react";
 
+const DEFAULT_MEMBER_NAMES = ["", "", ""];
+const MEMBER_PLACEHOLDERS = ["Lina", "Matteo", "Sarah", "Noah"];
+const RELAY_COLORS = [
+  { bg: "bg-hot/10", text: "text-hot", border: "border-hot/20" },
+  { bg: "bg-cyan/10", text: "text-cyan", border: "border-cyan/20" },
+  { bg: "bg-accent/10", text: "text-accent-light", border: "border-accent/20" },
+  { bg: "bg-success/10", text: "text-success", border: "border-success/20" }
+];
+
+function getRelayColor(index: number) {
+  return RELAY_COLORS[index] ?? RELAY_COLORS[RELAY_COLORS.length - 1];
+}
+
 export default function RegisterPage() {
   const [teamName, setTeamName] = useState("");
-  const [memberNames, setMemberNames] = useState(["", "", ""]);
+  const [memberNames, setMemberNames] = useState(DEFAULT_MEMBER_NAMES);
   const [myTeamCodes, setMyTeamCodes] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -23,7 +36,12 @@ export default function RegisterPage() {
   }, []);
 
   const canSubmit = useMemo(
-    () => round.registrationOpen && teamName.trim().length > 1 && memberNames.every((name) => name.trim().length > 1),
+    () =>
+      round.registrationOpen &&
+      teamName.trim().length > 1 &&
+      memberNames.length >= MIN_TEAM_MEMBERS &&
+      memberNames.length <= MAX_TEAM_MEMBERS &&
+      memberNames.every((name) => name.trim().length > 1),
     [memberNames, round.registrationOpen, teamName]
   );
 
@@ -60,7 +78,7 @@ export default function RegisterPage() {
       setMyTeamCodes((current) => Array.from(new Set([payload.team.teamCode, ...current])));
       await refresh();
       setTeamName("");
-      setMemberNames(["", "", ""]);
+      setMemberNames(DEFAULT_MEMBER_NAMES);
     } catch (nextError) {
       setError(nextError instanceof Error ? nextError.message : "Impossible de créer l'équipe.");
     } finally {
@@ -72,13 +90,18 @@ export default function RegisterPage() {
     setMemberNames((current) => current.map((name, currentIndex) => (currentIndex === index ? value : name)));
   }
 
-  const relayLabels = ["A", "B", "C"];
-  const placeholders = ["Lina", "Matteo", "Sarah"];
-  const relayColors = [
-    { bg: "bg-hot/10", text: "text-hot", border: "border-hot/20" },
-    { bg: "bg-cyan/10", text: "text-cyan", border: "border-cyan/20" },
-    { bg: "bg-accent/10", text: "text-accent-light", border: "border-accent/20" }
-  ];
+  function addMember() {
+    setMemberNames((current) =>
+      current.length < MAX_TEAM_MEMBERS ? [...current, ""] : current
+    );
+  }
+
+  function removeMember() {
+    setMemberNames((current) =>
+      current.length > MIN_TEAM_MEMBERS ? current.slice(0, -1) : current
+    );
+  }
+
   const myTeams = teams.filter((team) => myTeamCodes.includes(team.teamCode));
 
   return (
@@ -107,20 +130,43 @@ export default function RegisterPage() {
 
               {/* Player inputs */}
               <div className="space-y-3.5">
-                <p className="text-xs font-semibold uppercase tracking-wider text-text-muted">Joueurs</p>
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-text-muted">Joueurs</p>
+                  <div className="flex gap-2">
+                    <button
+                      className="ghost-button px-3 py-2 text-xs"
+                      onClick={removeMember}
+                      disabled={memberNames.length <= MIN_TEAM_MEMBERS}
+                      type="button"
+                    >
+                      - Retirer
+                    </button>
+                    <button
+                      className="ghost-button px-3 py-2 text-xs"
+                      onClick={addMember}
+                      disabled={memberNames.length >= MAX_TEAM_MEMBERS}
+                      type="button"
+                    >
+                      + Ajouter
+                    </button>
+                  </div>
+                </div>
                 {memberNames.map((value, index) => (
                   <label key={index} className="flex items-center gap-4">
-                    <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-sm font-bold ${relayColors[index].bg} ${relayColors[index].text}`}>
-                      {relayLabels[index]}
+                    <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-sm font-bold ${getRelayColor(index).bg} ${getRelayColor(index).text}`}>
+                      {RELAY_SEAT_LABELS[index] ?? index + 1}
                     </div>
                     <input
                       className="signal-input"
                       value={value}
                       onChange={(event) => handleMemberChange(index, event.target.value)}
-                      placeholder={placeholders[index]}
+                      placeholder={MEMBER_PLACEHOLDERS[index] ?? `Participant ${index + 1}`}
                     />
                   </label>
                 ))}
+                <p className="text-xs text-text-faint">
+                  Entre {MIN_TEAM_MEMBERS} et {MAX_TEAM_MEMBERS} joueurs par équipe.
+                </p>
               </div>
 
               {/* Registration status indicator */}
@@ -247,10 +293,10 @@ export default function RegisterPage() {
                   </div>
 
                   {/* Relay members grid */}
-                  <div className="mt-4 grid grid-cols-3 gap-3">
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                     {team.members.map((member, memberIndex) => (
-                      <div key={member.id} className={`rounded-lg border ${relayColors[memberIndex].border} bg-surface px-4 py-3`}>
-                        <p className={`text-xs font-semibold uppercase tracking-wider ${relayColors[memberIndex].text}`}>
+                      <div key={member.id} className={`rounded-lg border ${getRelayColor(memberIndex).border} bg-surface px-4 py-3`}>
+                        <p className={`text-xs font-semibold uppercase tracking-wider ${getRelayColor(memberIndex).text}`}>
                           Relais {member.relayOrder}
                         </p>
                         <p className="mt-1.5 text-sm font-medium text-text truncate">{member.name}</p>
