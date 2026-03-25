@@ -32,6 +32,27 @@ const actionConfig: Record<AdminRoundAction, { label: string; icon: React.ReactN
   close_round: { label: "Clôturer manche", icon: <Flag size={20} />, color: "text-accent-light", desc: "Terminer la manche en cours" }
 };
 
+async function readApiJson<T>(response: Response): Promise<T> {
+  const raw = await response.text();
+
+  if (!raw) {
+    return {} as T;
+  }
+
+  const contentType = response.headers.get("content-type") ?? "";
+
+  if (contentType.includes("application/json")) {
+    return JSON.parse(raw) as T;
+  }
+
+  const message = raw.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 180);
+  throw new Error(
+    message
+      ? `Le serveur a renvoye une reponse invalide (${response.status}): ${message}`
+      : `Le serveur a renvoye une reponse invalide (${response.status}).`
+  );
+}
+
 export function AdminScreen({ staffRole }: AdminScreenProps) {
   const [now, setNow] = useState(0);
   const [busyAction, setBusyAction] = useState<string | null>(null);
@@ -68,7 +89,7 @@ export function AdminScreen({ staffRole }: AdminScreenProps) {
           throw new Error("Impossible de charger les sujets.");
         }
 
-        const payload = (await response.json()) as { subjects?: RoundSubject[] };
+        const payload = await readApiJson<{ subjects?: RoundSubject[] }>(response);
 
         if (!cancelled) {
           setSubjects(payload.subjects ?? []);
@@ -122,7 +143,7 @@ export function AdminScreen({ staffRole }: AdminScreenProps) {
         body: JSON.stringify({ action })
       });
 
-      const payload = (await response.json()) as { error?: string };
+      const payload = await readApiJson<{ error?: string }>(response);
 
       if (!response.ok) {
         throw new Error(payload.error ?? "Action admin impossible.");
@@ -146,7 +167,7 @@ export function AdminScreen({ staffRole }: AdminScreenProps) {
         method: "POST"
       });
 
-      const payload = (await response.json()) as { error?: string };
+      const payload = await readApiJson<{ error?: string }>(response);
 
       if (!response.ok) {
         throw new Error(payload.error ?? "Impossible de marquer la soumission.");
@@ -177,7 +198,7 @@ export function AdminScreen({ staffRole }: AdminScreenProps) {
         })
       });
 
-      const payload = (await response.json()) as { error?: string };
+      const payload = await readApiJson<{ error?: string }>(response);
 
       if (!response.ok) {
         throw new Error(payload.error ?? "Impossible de créer la manche.");
@@ -217,7 +238,7 @@ export function AdminScreen({ staffRole }: AdminScreenProps) {
         })
       });
 
-      const payload = (await response.json()) as { error?: string };
+      const payload = await readApiJson<{ error?: string }>(response);
 
       if (!response.ok) {
         throw new Error(payload.error ?? "Impossible d'assigner le sujet.");
@@ -245,7 +266,7 @@ export function AdminScreen({ staffRole }: AdminScreenProps) {
         })
       });
 
-      const payload = (await response.json()) as { error?: string };
+      const payload = await readApiJson<{ error?: string }>(response);
 
       if (!response.ok) {
         throw new Error(payload.error ?? "Impossible de changer de manche.");
@@ -294,7 +315,7 @@ export function AdminScreen({ staffRole }: AdminScreenProps) {
         body: JSON.stringify({ confirmationText })
       });
 
-      const payload = (await response.json()) as { error?: string };
+      const payload = await readApiJson<{ error?: string }>(response);
 
       if (!response.ok) {
         throw new Error(payload.error ?? "Impossible de reinitialiser l'edition.");
