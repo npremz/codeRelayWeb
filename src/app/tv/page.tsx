@@ -9,6 +9,15 @@ import { useLiveTeams } from "@/lib/use-live-teams";
 import { useEffect, useState } from "react";
 import { Trophy, Medal, Tv } from "lucide-react";
 
+function getFunctionPrototype(functionName: string, explicitPrototype?: string) {
+  if (explicitPrototype?.trim()) {
+    return explicitPrototype.trim();
+  }
+
+  const normalized = functionName.trim();
+  return normalized ? `def ${normalized}(...):` : "def solution(...):";
+}
+
 function getPhaseColor(phase: string) {
   switch (phase) {
     case "reflection": return "text-cyan";
@@ -102,6 +111,12 @@ export default function TvPage() {
                   <span className="font-mono font-bold text-cyan bg-cyan/10 px-3 py-1 rounded-lg border border-cyan/20">{subject.fileName}</span>
                   <span className="text-text-muted pl-2">Fonction :</span>
                   <span className="font-mono font-bold text-cyan bg-cyan/10 px-3 py-1 rounded-lg border border-cyan/20">{subject.functionName}</span>
+                </div>
+                <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-lg">
+                  <span className="text-text-muted">Prototype :</span>
+                  <code className="font-mono font-bold text-cyan bg-cyan/10 px-3 py-1 rounded-lg border border-cyan/20">
+                    {getFunctionPrototype(subject.functionName, subject.prototype)}
+                  </code>
                 </div>
               </div>
             ) : (
@@ -236,4 +251,3 @@ export default function TvPage() {
     </main>
   );
 }
-
