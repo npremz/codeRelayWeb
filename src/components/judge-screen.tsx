@@ -5,7 +5,7 @@ import { Panel } from "@/components/panel";
 import { buildLiveTeams, formatTieBreakTuple, getRelayState, scoreLabels } from "@/lib/demo-game";
 import { PublicTeam, ScoreCard, ScoreMetricKey, TeamScoreInput } from "@/lib/game-types";
 import { useLiveTeams } from "@/lib/use-live-teams";
-import { ChangeEvent, useEffect, useMemo, useState } from "react";
+import { ChangeEvent, useEffect, useState } from "react";
 import { Scale } from "lucide-react";
 
 type JudgeScores = Record<string, ScoreCard>;
@@ -104,15 +104,12 @@ export function JudgeScreen({ staffRole }: JudgeScreenProps) {
     notes: selectedTeam.score.notes ?? ""
   };
 
-  const total = useMemo(
-    () =>
-      selectedScore.correction +
-      selectedScore.edgeCases +
-      selectedScore.complexity +
-      selectedScore.readability +
-      selectedSpeedBonus,
-    [selectedScore, selectedSpeedBonus]
-  );
+  const total =
+    selectedScore.correction +
+    selectedScore.edgeCases +
+    selectedScore.complexity +
+    selectedScore.readability +
+    selectedSpeedBonus;
 
   function updateScore(key: keyof ScoreCard, value: number | string) {
     setScores((current) => ({
