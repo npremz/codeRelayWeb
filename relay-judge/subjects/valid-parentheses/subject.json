@@ -1,6 +1,7 @@
 {
   "id": "valid-parentheses",
   "title": "Valid Parentheses",
+  "prototype": "def valid_parentheses(s):",
   "difficulty": "easy",
   "description": "Étant donnée une chaîne `s` ne contenant que les caractères `(`, `)`, `[`, `]`, `{` et `}`, retourne `true` si la chaîne est valide, sinon `false`.\n\nUne chaîne est valide si:\n- chaque parenthèse ouvrante est fermée par le bon type de parenthèse\n- les fermetures respectent le bon ordre\n- aucune parenthèse ouvrante ne reste sans fermeture\n\nExemple 1:\ns = \"()[]{}\"\nRéponse attendue: true\n\nExemple 2:\ns = \"(]\"\nRéponse attendue: false\n\nExemple 3:\ns = \"([)]\"\nRéponse attendue: false\n\nExemple 4:\ns = \"{[()()]}\"\nRéponse attendue: true",
   "file_name": "valid_parentheses.py",

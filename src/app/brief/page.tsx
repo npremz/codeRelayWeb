@@ -1,6 +1,7 @@
 import { AppFrame } from "@/components/app-frame";
 import { Panel } from "@/components/panel";
 import { getRoundActionLabel } from "@/lib/demo-game";
+import { listPublicSubjects } from "@/lib/subject-catalog";
 import { getCurrentRoundSummary, getRoundState } from "@/lib/team-store";
 import { RoundSubject } from "@/lib/game-types";
 
@@ -13,14 +14,26 @@ function buildFullSubjectText(subject: RoundSubject) {
     "",
     `Fichier attendu: ${subject.fileName}`,
     `Fonction attendue: ${subject.functionName}`,
+    ...(subject.prototype ? [`Prototype: ${subject.prototype}`] : []),
     "",
     subject.brief || "Le brief textuel n'est pas encore renseigné pour ce sujet."
   ].join("\n");
 }
 
 export default async function BriefPage() {
-  const [currentRound, round] = await Promise.all([getCurrentRoundSummary(), getRoundState()]);
-  const subject = currentRound?.subject ?? null;
+  const [currentRound, round, subjects] = await Promise.all([
+    getCurrentRoundSummary(),
+    getRoundState(),
+    listPublicSubjects()
+  ]);
+  const subjectFromRound = currentRound?.subject ?? null;
+  const catalogSubject = subjects.find((item) => item.id === subjectFromRound?.id);
+  const subject = subjectFromRound
+    ? {
+        ...subjectFromRound,
+        prototype: subjectFromRound.prototype ?? catalogSubject?.prototype
+      }
+    : null;
 
   return (
     <AppFrame
@@ -50,6 +63,12 @@ export default async function BriefPage() {
                 <div className="rounded-xl border border-border bg-elevated/30 px-5 py-4">
                   <p className="text-xs font-bold uppercase tracking-wider text-accent-light">Fonction attendue</p>
                   <p className="mt-2 text-lg font-semibold text-text">{subject.functionName}</p>
+                  {subject.prototype && (
+                    <div className="mt-3 rounded-lg border border-border/60 bg-surface px-3 py-2">
+                      <p className="text-[11px] font-bold uppercase tracking-wider text-text-faint">Prototype</p>
+                      <code className="mt-1 block text-sm text-text">{subject.prototype}</code>
+                    </div>
+                  )}
                 </div>
               </div>
 

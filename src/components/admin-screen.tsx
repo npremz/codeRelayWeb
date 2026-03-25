@@ -365,6 +365,10 @@ export function AdminScreen({ staffRole }: AdminScreenProps) {
     return subject?.difficulty ?? subjects.find((candidate) => candidate.id === subject?.id)?.difficulty;
   }
 
+  function resolveSubjectPrototype(subject: RoundSubject | null | undefined) {
+    return subject?.prototype ?? subjects.find((candidate) => candidate.id === subject?.id)?.prototype;
+  }
+
   function renderDifficultyBadge(subject: RoundSubject | null | undefined) {
     const difficulty = resolveSubjectDifficulty(subject);
 
@@ -542,6 +546,12 @@ export function AdminScreen({ staffRole }: AdminScreenProps) {
                     <p className="mt-1 text-xs text-text-muted">
                       Fonction: {newRoundSubject.functionName}
                     </p>
+                    {resolveSubjectPrototype(newRoundSubject) && (
+                      <div className="mt-2 rounded-lg border border-border/60 bg-surface px-3 py-2">
+                        <p className="text-[11px] font-bold uppercase tracking-wider text-text-faint">Prototype</p>
+                        <code className="mt-1 block text-sm text-text">{resolveSubjectPrototype(newRoundSubject)}</code>
+                      </div>
+                    )}
                   </div>
                 )}
                 <label className="flex items-center gap-3 cursor-pointer">
@@ -625,6 +635,12 @@ export function AdminScreen({ staffRole }: AdminScreenProps) {
                       <p className="mt-1 text-xs text-text-muted">
                         Fonction: {currentRound.subject.functionName}
                       </p>
+                      {resolveSubjectPrototype(currentRound.subject) && (
+                        <div className="mt-2 rounded-lg border border-border/60 bg-surface px-3 py-2">
+                          <p className="text-[11px] font-bold uppercase tracking-wider text-text-faint">Prototype</p>
+                          <code className="mt-1 block text-sm text-text">{resolveSubjectPrototype(currentRound.subject)}</code>
+                        </div>
+                      )}
                       {currentRound.subject.brief && (
                         <p className="mt-3 whitespace-pre-line text-sm leading-6 text-text-muted">{currentRound.subject.brief}</p>
                       )}
@@ -663,6 +679,12 @@ export function AdminScreen({ staffRole }: AdminScreenProps) {
                     <p className="mt-1 text-xs text-text-faint">
                       Fonction: {selectedSubject.functionName}
                     </p>
+                    {resolveSubjectPrototype(selectedSubject) && (
+                      <div className="mt-2 rounded-lg border border-border/60 bg-surface px-3 py-2">
+                        <p className="text-[11px] font-bold uppercase tracking-wider text-text-faint">Prototype</p>
+                        <code className="mt-1 block text-sm text-text">{resolveSubjectPrototype(selectedSubject)}</code>
+                      </div>
+                    )}
                     {selectedSubject.brief && (
                       <p className="mt-3 whitespace-pre-line text-sm leading-6 text-text-muted">{selectedSubject.brief}</p>
                     )}

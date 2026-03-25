@@ -77,6 +77,7 @@ export type RoundSubject = {
   fileName: string;
   brief: string;
   functionName: string;
+  prototype?: string;
   difficulty?: "easy" | "medium" | "hard";
 };
 

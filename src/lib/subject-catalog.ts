@@ -10,6 +10,7 @@ type SubjectFileShape = {
   description?: unknown;
   file_name?: unknown;
   function_name?: unknown;
+  prototype?: unknown;
   difficulty?: unknown;
 };
 
@@ -21,6 +22,7 @@ function parseSubject(data: SubjectFileShape, filePath: string): RoundSubject {
   const brief = typeof data.description === "string" ? data.description.trim() : "";
   const fileName = typeof data.file_name === "string" ? data.file_name.trim() : "";
   const functionName = typeof data.function_name === "string" ? data.function_name.trim() : "";
+  const prototype = typeof data.prototype === "string" ? data.prototype.trim() : "";
   const difficulty =
     data.difficulty === "easy" || data.difficulty === "medium" || data.difficulty === "hard"
       ? data.difficulty
@@ -36,6 +38,7 @@ function parseSubject(data: SubjectFileShape, filePath: string): RoundSubject {
     brief,
     fileName,
     functionName,
+    prototype: prototype || undefined,
     difficulty
   };
 }
