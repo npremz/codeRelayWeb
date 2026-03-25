@@ -34,7 +34,7 @@ export default async function BriefPage() {
 
               <div className="rounded-xl border border-border bg-surface px-5 py-5">
                 <p className="text-xs font-bold uppercase tracking-wider text-text-faint">Énoncé</p>
-                <p className="mt-3 text-base leading-7 text-text-muted">
+                <p className="mt-3 whitespace-pre-line text-base leading-7 text-text-muted">
                   {subject.brief || "Le brief textuel n'est pas encore renseigné pour ce sujet."}
                 </p>
               </div>

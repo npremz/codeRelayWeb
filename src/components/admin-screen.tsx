@@ -577,7 +577,7 @@ export function AdminScreen({ staffRole }: AdminScreenProps) {
                         Fonction: {currentRound.subject.functionName}
                       </p>
                       {currentRound.subject.brief && (
-                        <p className="mt-3 text-sm leading-6 text-text-muted">{currentRound.subject.brief}</p>
+                        <p className="mt-3 whitespace-pre-line text-sm leading-6 text-text-muted">{currentRound.subject.brief}</p>
                       )}
                     </>
                   ) : (
@@ -612,7 +612,7 @@ export function AdminScreen({ staffRole }: AdminScreenProps) {
                       Fonction: {selectedSubject.functionName}
                     </p>
                     {selectedSubject.brief && (
-                      <p className="mt-3 text-sm leading-6 text-text-muted">{selectedSubject.brief}</p>
+                      <p className="mt-3 whitespace-pre-line text-sm leading-6 text-text-muted">{selectedSubject.brief}</p>
                     )}
                   </div>
                 )}
