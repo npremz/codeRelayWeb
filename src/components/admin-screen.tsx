@@ -22,6 +22,21 @@ type AdminScreenProps = {
   staffRole: "admin" | "judge";
 };
 
+const difficultyConfig = {
+  easy: {
+    label: "Facile",
+    className: "border-success/20 bg-success/10 text-success"
+  },
+  medium: {
+    label: "Moyen",
+    className: "border-warn/20 bg-warn/10 text-warn"
+  },
+  hard: {
+    label: "Difficile",
+    className: "border-hot/20 bg-hot/10 text-hot"
+  }
+} satisfies Record<NonNullable<RoundSubject["difficulty"]>, { label: string; className: string }>;
+
 const actionConfig: Record<AdminRoundAction, { label: string; icon: React.ReactNode; color: string; desc: string }> = {
   open_registration: { label: "Ouvrir inscriptions", icon: <FileEdit size={20} />, color: "text-success", desc: "Permettre aux équipes de s'inscrire" },
   close_registration: { label: "Fermer inscriptions", icon: <Lock size={20} />, color: "text-warn", desc: "Bloquer les nouvelles inscriptions" },
@@ -346,6 +361,26 @@ export function AdminScreen({ staffRole }: AdminScreenProps) {
   const subjectSelectionChanged = selectedSubjectId !== (currentRound?.subject?.id ?? "");
   const adminBusy = busyAction !== null || creatingRound || assigningSubject || resettingEvent;
 
+  function resolveSubjectDifficulty(subject: RoundSubject | null | undefined) {
+    return subject?.difficulty ?? subjects.find((candidate) => candidate.id === subject?.id)?.difficulty;
+  }
+
+  function renderDifficultyBadge(subject: RoundSubject | null | undefined) {
+    const difficulty = resolveSubjectDifficulty(subject);
+
+    if (!difficulty) {
+      return null;
+    }
+
+    const config = difficultyConfig[difficulty];
+
+    return (
+      <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.18em] ${config.className}`}>
+        {config.label}
+      </span>
+    );
+  }
+
   function getRoundPhaseLabel(r: RoundSummary) {
     return getRoundActionLabel(r.phase);
   }
@@ -389,11 +424,14 @@ export function AdminScreen({ staffRole }: AdminScreenProps) {
                     <p className="mt-1 font-display text-xl font-bold tracking-tight text-text">
                       {currentRound.name || `Manche ${currentRound.sequence}`}
                     </p>
-                    <p className="mt-1 text-sm text-text-muted">
-                      {currentRound.subject
-                        ? `${currentRound.subject.title} · ${currentRound.subject.fileName}`
-                        : "Aucun sujet assigné"}
-                    </p>
+                    {currentRound.subject ? (
+                      <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-text-muted">
+                        <span>{`${currentRound.subject.title} · ${currentRound.subject.fileName}`}</span>
+                        {renderDifficultyBadge(currentRound.subject)}
+                      </div>
+                    ) : (
+                      <p className="mt-1 text-sm text-text-muted">Aucun sujet assigné</p>
+                    )}
                   </div>
                   <div className="text-right">
                     <p className="font-display text-3xl font-bold text-accent-light">{currentRound.teamCount}</p>
@@ -427,9 +465,14 @@ export function AdminScreen({ staffRole }: AdminScreenProps) {
                         <p className="text-xs text-text-faint">
                           {getRoundPhaseLabel(r)} · {r.teamCount} équipes
                         </p>
-                        <p className="text-xs text-text-faint">
-                          {r.subject ? `${r.subject.title} · ${r.subject.fileName}` : "Sujet non défini"}
-                        </p>
+                        {r.subject ? (
+                          <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-text-faint">
+                            <span>{`${r.subject.title} · ${r.subject.fileName}`}</span>
+                            {renderDifficultyBadge(r.subject)}
+                          </div>
+                        ) : (
+                          <p className="text-xs text-text-faint">Sujet non défini</p>
+                        )}
                       </div>
                     </div>
                     {!r.isCurrent && (
@@ -484,14 +527,17 @@ export function AdminScreen({ staffRole }: AdminScreenProps) {
                     <option value="">Aucun sujet pour l'instant</option>
                     {subjects.map((subject) => (
                       <option key={subject.id} value={subject.id}>
-                        {subject.title} · {subject.fileName}
+                        {`${difficultyConfig[subject.difficulty ?? "medium"].label} · ${subject.title} · ${subject.fileName}`}
                       </option>
                     ))}
                   </select>
                 </label>
                 {newRoundSubject && (
                   <div className="rounded-xl border border-cyan/20 bg-cyan/5 px-4 py-3">
-                    <p className="text-sm font-bold text-cyan">{newRoundSubject.title}</p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="text-sm font-bold text-cyan">{newRoundSubject.title}</p>
+                      {renderDifficultyBadge(newRoundSubject)}
+                    </div>
                     <p className="mt-1 text-sm text-text">Fichier: {newRoundSubject.fileName}</p>
                     <p className="mt-1 text-xs text-text-muted">
                       Fonction: {newRoundSubject.functionName}
@@ -569,9 +615,12 @@ export function AdminScreen({ staffRole }: AdminScreenProps) {
                   <p className="text-xs font-bold uppercase tracking-wider text-cyan">Sujet actuel</p>
                   {currentRound?.subject ? (
                     <>
-                      <p className="mt-2 font-display text-xl font-bold tracking-tight text-text">
-                        {currentRound.subject.title}
-                      </p>
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        <p className="font-display text-xl font-bold tracking-tight text-text">
+                          {currentRound.subject.title}
+                        </p>
+                        {renderDifficultyBadge(currentRound.subject)}
+                      </div>
                       <p className="mt-1 text-sm text-text">Fichier: {currentRound.subject.fileName}</p>
                       <p className="mt-1 text-xs text-text-muted">
                         Fonction: {currentRound.subject.functionName}
@@ -606,7 +655,10 @@ export function AdminScreen({ staffRole }: AdminScreenProps) {
 
                 {selectedSubject && (
                   <div className="rounded-xl border border-border bg-elevated/30 px-4 py-4">
-                    <p className="text-sm font-bold text-text">{selectedSubject.title}</p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="text-sm font-bold text-text">{selectedSubject.title}</p>
+                      {renderDifficultyBadge(selectedSubject)}
+                    </div>
                     <p className="mt-1 text-sm text-text-muted">Fichier attendu: {selectedSubject.fileName}</p>
                     <p className="mt-1 text-xs text-text-faint">
                       Fonction: {selectedSubject.functionName}

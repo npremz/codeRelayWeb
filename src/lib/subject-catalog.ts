@@ -10,6 +10,7 @@ type SubjectFileShape = {
   description?: unknown;
   file_name?: unknown;
   function_name?: unknown;
+  difficulty?: unknown;
 };
 
 const SUBJECTS_DIR = path.join(process.cwd(), "relay-judge", "subjects");
@@ -20,6 +21,10 @@ function parseSubject(data: SubjectFileShape, filePath: string): RoundSubject {
   const brief = typeof data.description === "string" ? data.description.trim() : "";
   const fileName = typeof data.file_name === "string" ? data.file_name.trim() : "";
   const functionName = typeof data.function_name === "string" ? data.function_name.trim() : "";
+  const difficulty =
+    data.difficulty === "easy" || data.difficulty === "medium" || data.difficulty === "hard"
+      ? data.difficulty
+      : undefined;
 
   if (!id || !title || !fileName || !functionName) {
     throw new Error(`Sujet invalide dans ${filePath}.`);
@@ -30,7 +35,8 @@ function parseSubject(data: SubjectFileShape, filePath: string): RoundSubject {
     title,
     brief,
     fileName,
-    functionName
+    functionName,
+    difficulty
   };
 }
 
