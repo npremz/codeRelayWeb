@@ -3,7 +3,55 @@
   "title": "Minimum Size Subarray Sum",
   "prototype": "def minimum_size_subarray_sum(target, nums):",
   "difficulty": "medium",
-  "description": "Étant donné un tableau d'entiers positifs `nums` et un entier positif `target`, retourne la longueur minimale d'une sous-suite contiguë dont la somme est supérieure ou égale à `target`.\n\nS'il n'existe aucune sous-suite valide, retourne `0`.\n\nExemple 1:\ntarget = 7, nums = [2, 3, 1, 2, 4, 3]\nRéponse attendue: 2\nExplication: la sous-suite [4, 3] atteint 7 avec la longueur minimale.\n\nExemple 2:\ntarget = 4, nums = [1, 4, 4]\nRéponse attendue: 1\n\nExemple 3:\ntarget = 100, nums = [1, 2, 3, 4, 5]\nRéponse attendue: 0\n\nAttendu:\n- bien gérer les fenêtres qui doivent s'agrandir puis se réduire plusieurs fois\n- retourner 0 si aucune solution n'existe",
+  "description": "Retourne la longueur minimale d'une sous-suite contiguë de `nums` dont la somme est supérieure ou égale à `target`. Si aucune sous-suite ne convient, retourne `0`.",
+  "parameters": [
+    {
+      "name": "target",
+      "type": "int",
+      "description": "Seuil minimal que la somme de la sous-suite doit atteindre."
+    },
+    {
+      "name": "nums",
+      "type": "list[int]",
+      "description": "Tableau d'entiers positifs dans lequel il faut trouver une fenêtre contiguë."
+    }
+  ],
+  "returns": {
+    "type": "int",
+    "description": "La longueur minimale d'une fenêtre valide, ou `0` si elle n'existe pas."
+  },
+  "constraints": [
+    "1 <= nums.length <= 10^5",
+    "1 <= nums[i] <= 10^4",
+    "1 <= target <= 10^9"
+  ],
+  "examples": [
+    {
+      "title": "Exemple 1",
+      "input": {
+        "target": 7,
+        "nums": [2, 3, 1, 2, 4, 3]
+      },
+      "output": 2,
+      "explanation": "La fenêtre `[4, 3]` atteint `7` avec la longueur minimale."
+    },
+    {
+      "title": "Exemple 2",
+      "input": {
+        "target": 4,
+        "nums": [1, 4, 4]
+      },
+      "output": 1
+    },
+    {
+      "title": "Exemple 3",
+      "input": {
+        "target": 100,
+        "nums": [1, 2, 3, 4, 5]
+      },
+      "output": 0
+    }
+  ],
   "file_name": "minimum_size_subarray_sum.py",
   "function_name": "minimum_size_subarray_sum",
   "checker": "exact_int",

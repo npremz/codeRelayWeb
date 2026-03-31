@@ -3,7 +3,56 @@
   "title": "Longest Substring Without Repeating Characters",
   "prototype": "def longest_substring_without_repeating_characters(s):",
   "difficulty": "medium",
-  "description": "Étant donnée une chaîne `s`, retourne la longueur de la plus longue sous-chaîne contenant uniquement des caractères distincts.\n\nUne sous-chaîne est une portion contiguë de la chaîne.\n\nExemple 1:\ns = \"abcabcbb\"\nRéponse attendue: 3\nExplication: la plus longue sous-chaîne sans répétition est \"abc\".\n\nExemple 2:\ns = \"bbbbb\"\nRéponse attendue: 1\nExplication: la meilleure sous-chaîne possible est \"b\".\n\nExemple 3:\ns = \"pwwkew\"\nRéponse attendue: 3\nExplication: \"wke\" est valide, mais \"pwke\" n'est pas une sous-chaîne contiguë.\n\nExemple 4:\ns = \"\"\nRéponse attendue: 0",
+  "description": "Retourne la longueur de la plus longue sous-chaîne de `s` qui ne contient aucun caractère répété. Une sous-chaîne est forcément contiguë.",
+  "parameters": [
+    {
+      "name": "s",
+      "type": "string",
+      "description": "Chaîne d'entrée dans laquelle il faut chercher la plus longue fenêtre sans doublon."
+    }
+  ],
+  "returns": {
+    "type": "int",
+    "description": "La longueur maximale d'une sous-chaîne contiguë sans répétition."
+  },
+  "constraints": [
+    "0 <= s.length <= 5 * 10^4",
+    "`s` peut contenir des lettres, chiffres, symboles ou espaces",
+    "La sous-chaîne recherchée doit être contiguë"
+  ],
+  "examples": [
+    {
+      "title": "Exemple 1",
+      "input": {
+        "s": "abcabcbb"
+      },
+      "output": 3,
+      "explanation": "La meilleure sous-chaîne est `abc`."
+    },
+    {
+      "title": "Exemple 2",
+      "input": {
+        "s": "bbbbb"
+      },
+      "output": 1,
+      "explanation": "La seule sous-chaîne valide maximale est `b`."
+    },
+    {
+      "title": "Exemple 3",
+      "input": {
+        "s": "pwwkew"
+      },
+      "output": 3,
+      "explanation": "`wke` est valide, mais `pwke` n'est pas contiguë."
+    },
+    {
+      "title": "Exemple 4",
+      "input": {
+        "s": ""
+      },
+      "output": 0
+    }
+  ],
   "file_name": "longest_substring_without_repeating_characters.py",
   "function_name": "longest_substring_without_repeating_characters",
   "checker": "exact_int",

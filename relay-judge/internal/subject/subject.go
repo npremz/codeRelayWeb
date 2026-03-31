@@ -14,11 +14,33 @@ type Subject struct {
 	ID           string     `json:"id"`
 	Title        string     `json:"title"`
 	Description  string     `json:"description,omitempty"`
+	Parameters   []Parameter `json:"parameters,omitempty"`
+	Returns      *ReturnSpec `json:"returns,omitempty"`
+	Constraints  []string    `json:"constraints,omitempty"`
+	Examples     []Example   `json:"examples,omitempty"`
 	FileName     string     `json:"file_name"`
 	FunctionName string     `json:"function_name"`
 	Checker      string     `json:"checker"`
 	TimeLimitMs  int        `json:"time_limit_ms"`
 	Tests        []TestCase `json:"tests"`
+}
+
+type Parameter struct {
+	Name        string `json:"name"`
+	Type        string `json:"type"`
+	Description string `json:"description,omitempty"`
+}
+
+type ReturnSpec struct {
+	Type        string `json:"type"`
+	Description string `json:"description,omitempty"`
+}
+
+type Example struct {
+	Title       string         `json:"title,omitempty"`
+	Input       map[string]any `json:"input,omitempty"`
+	Output      any            `json:"output,omitempty"`
+	Explanation string         `json:"explanation,omitempty"`
 }
 
 type TestCase struct {

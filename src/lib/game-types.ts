@@ -71,6 +71,24 @@ export type RoundControlState = {
   updatedAt: string;
 };
 
+export type SubjectParameter = {
+  name: string;
+  type: string;
+  description: string;
+};
+
+export type SubjectReturn = {
+  type: string;
+  description: string;
+};
+
+export type SubjectExample = {
+  title: string;
+  input: Record<string, unknown>;
+  output: unknown;
+  explanation?: string;
+};
+
 export type RoundSubject = {
   id: string;
   title: string;
@@ -79,6 +97,10 @@ export type RoundSubject = {
   functionName: string;
   prototype?: string;
   difficulty?: "easy" | "medium" | "hard";
+  parameters: SubjectParameter[];
+  returns?: SubjectReturn;
+  constraints: string[];
+  examples: SubjectExample[];
 };
 
 export type RoundSummary = {

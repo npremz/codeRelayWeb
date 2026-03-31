@@ -3,7 +3,53 @@
   "title": "Valid Parentheses",
   "prototype": "def valid_parentheses(s):",
   "difficulty": "easy",
-  "description": "Étant donnée une chaîne `s` ne contenant que les caractères `(`, `)`, `[`, `]`, `{` et `}`, retourne `true` si la chaîne est valide, sinon `false`.\n\nUne chaîne est valide si:\n- chaque parenthèse ouvrante est fermée par le bon type de parenthèse\n- les fermetures respectent le bon ordre\n- aucune parenthèse ouvrante ne reste sans fermeture\n\nExemple 1:\ns = \"()[]{}\"\nRéponse attendue: true\n\nExemple 2:\ns = \"(]\"\nRéponse attendue: false\n\nExemple 3:\ns = \"([)]\"\nRéponse attendue: false\n\nExemple 4:\ns = \"{[()()]}\"\nRéponse attendue: true",
+  "description": "Retourne `true` si la chaîne `s` est correctement parenthésée. Chaque ouverture doit être fermée par le bon symbole et dans le bon ordre.",
+  "parameters": [
+    {
+      "name": "s",
+      "type": "string",
+      "description": "Chaîne composée uniquement de parenthèses, crochets et accolades."
+    }
+  ],
+  "returns": {
+    "type": "bool",
+    "description": "`true` si la chaîne est valide, sinon `false`."
+  },
+  "constraints": [
+    "1 <= s.length <= 10^4",
+    "`s` ne contient que `()[]{}`",
+    "Aucune ouverture ne doit rester sans fermeture"
+  ],
+  "examples": [
+    {
+      "title": "Exemple 1",
+      "input": {
+        "s": "()[]{}"
+      },
+      "output": true
+    },
+    {
+      "title": "Exemple 2",
+      "input": {
+        "s": "(]"
+      },
+      "output": false
+    },
+    {
+      "title": "Exemple 3",
+      "input": {
+        "s": "([)]"
+      },
+      "output": false
+    },
+    {
+      "title": "Exemple 4",
+      "input": {
+        "s": "{[()()]}"
+      },
+      "output": true
+    }
+  ],
   "file_name": "valid_parentheses.py",
   "function_name": "valid_parentheses",
   "checker": "exact_bool",

@@ -3,7 +3,48 @@
   "title": "Two Sum",
   "prototype": "def two_sum(nums, target):",
   "difficulty": "easy",
-  "description": "Étant donné un tableau d'entiers `nums` et un entier `target`, retourne les indices des deux éléments dont la somme vaut exactement `target`.\n\nTu peux supposer qu'il existe une solution unique et qu'un même élément ne peut pas être utilisé deux fois.\n\nLe résultat peut être retourné dans n'importe quel ordre.\n\nExemple 1:\nnums = [2, 7, 11, 15], target = 9\nRéponse attendue: [0, 1]\nExplication: nums[0] + nums[1] = 2 + 7 = 9\n\nExemple 2:\nnums = [3, 3], target = 6\nRéponse attendue: [0, 1]\n\nAttendu:\n- gérer les doublons\n- fonctionner avec des nombres négatifs\n- éviter une solution fragile basée uniquement sur les exemples",
+  "description": "Retourne les indices des deux éléments de `nums` dont la somme vaut exactement `target`. Une solution unique existe et un même élément ne peut pas être utilisé deux fois.",
+  "parameters": [
+    {
+      "name": "nums",
+      "type": "list[int]",
+      "description": "Tableau d'entiers dans lequel il faut trouver la bonne paire."
+    },
+    {
+      "name": "target",
+      "type": "int",
+      "description": "Somme exacte à atteindre."
+    }
+  ],
+  "returns": {
+    "type": "list[int]",
+    "description": "Les indices des deux éléments, dans n'importe quel ordre."
+  },
+  "constraints": [
+    "2 <= nums.length <= 10^4",
+    "-10^9 <= nums[i], target <= 10^9",
+    "Une seule solution valide existe",
+    "Un même élément ne peut pas être utilisé deux fois"
+  ],
+  "examples": [
+    {
+      "title": "Exemple 1",
+      "input": {
+        "nums": [2, 7, 11, 15],
+        "target": 9
+      },
+      "output": [0, 1],
+      "explanation": "nums[0] + nums[1] = 2 + 7 = 9."
+    },
+    {
+      "title": "Exemple 2",
+      "input": {
+        "nums": [3, 3],
+        "target": 6
+      },
+      "output": [0, 1]
+    }
+  ],
   "file_name": "two_sum.py",
   "function_name": "two_sum",
   "checker": "two_sum_pair",

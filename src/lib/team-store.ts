@@ -219,7 +219,10 @@ function toRoundSubject(round: PrismaRound): RoundSubject | null {
     title: round.subjectTitle,
     fileName: round.subjectFileName,
     brief: round.subjectBrief ?? "",
-    functionName: round.subjectFunctionName
+    functionName: round.subjectFunctionName,
+    parameters: [],
+    constraints: [],
+    examples: []
   };
 }
 
