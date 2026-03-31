@@ -47,7 +47,7 @@ export default async function BriefPage() {
             <div className="space-y-5">
               <div className="min-w-0 rounded-2xl border border-cyan/20 bg-cyan/5 px-5 py-5">
                 <p className="text-xs font-bold uppercase tracking-wider text-cyan">Titre</p>
-                <p className="mt-2 font-display text-2xl font-bold tracking-tight leading-tight text-text md:text-3xl" style={{ wordBreak: "break-word", overflowWrap: "anywhere" }}>
+                <p className="break-safe mt-2 font-display text-2xl font-bold tracking-tight leading-tight text-text md:text-3xl">
                   {subject.title}
                 </p>
               </div>
@@ -56,8 +56,7 @@ export default async function BriefPage() {
                 <div className="min-w-0 overflow-hidden rounded-xl border border-cyan/20 bg-cyan/5 px-5 py-4">
                   <p className="text-xs font-bold uppercase tracking-wider text-cyan">Fichier attendu</p>
                   <code
-                    className="mt-2 block max-w-full whitespace-normal text-sm font-bold tracking-tight leading-tight text-text md:text-base"
-                    style={{ wordBreak: "break-all", overflowWrap: "anywhere" }}
+                    className="code-break-safe mt-2 block text-sm font-bold tracking-tight leading-tight text-text md:text-base"
                   >
                     {subject.fileName}
                   </code>
@@ -66,8 +65,7 @@ export default async function BriefPage() {
                 <div className="min-w-0 overflow-hidden rounded-xl border border-border bg-elevated/30 px-5 py-4">
                   <p className="text-xs font-bold uppercase tracking-wider text-accent-light">Fonction attendue</p>
                   <code
-                    className="mt-2 block max-w-full whitespace-normal text-sm font-semibold leading-tight text-text md:text-base"
-                    style={{ wordBreak: "break-all", overflowWrap: "anywhere" }}
+                    className="code-break-safe mt-2 block text-sm font-semibold leading-tight text-text md:text-base"
                   >
                     {subject.functionName}
                   </code>
@@ -75,8 +73,7 @@ export default async function BriefPage() {
                     <div className="mt-3 min-w-0 rounded-lg border border-border/60 bg-surface px-3 py-2">
                       <p className="text-[11px] font-bold uppercase tracking-wider text-text-faint">Prototype</p>
                       <code
-                        className="mt-1 block max-w-full whitespace-normal text-xs text-text md:text-sm"
-                        style={{ wordBreak: "break-all", overflowWrap: "anywhere" }}
+                        className="code-break-safe mt-1 block text-xs text-text md:text-sm"
                       >
                         {subject.prototype}
                       </code>
@@ -88,8 +85,7 @@ export default async function BriefPage() {
               <div className="overflow-hidden rounded-2xl border border-border bg-surface px-5 py-5">
                 <p className="text-xs font-bold uppercase tracking-wider text-text-faint">Énoncé intégral</p>
                 <pre
-                  className="mt-4 m-0 whitespace-pre-wrap font-inherit text-base leading-7 text-text-muted"
-                  style={{ wordBreak: "break-all", overflowWrap: "anywhere" }}
+                  className="break-safe mt-4 m-0 whitespace-pre-wrap font-inherit text-base leading-7 text-text-muted"
                 >
                   {buildFullSubjectText(subject)}
                 </pre>

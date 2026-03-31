@@ -68,9 +68,9 @@ export default function TvPage() {
       <div className="flex-1 flex flex-col w-full max-w-[1920px] mx-auto p-6 md:p-8 gap-6 min-h-0">
         
         {/* ── HEADER (Top Bar) ── */}
-        <header className="shrink-0 flex items-end justify-between border-b border-border pb-4">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
+        <header className="shrink-0 flex flex-col gap-5 border-b border-border pb-4 sm:flex-row sm:items-end sm:justify-between">
+          <div className="min-w-0">
+            <div className="mb-2 flex flex-wrap items-center gap-3">
               <Tv size={20} className="text-accent-light" />
               <p className="text-sm font-bold uppercase tracking-[0.2em] text-accent-light">Code Relay · TV</p>
               {currentRound && (
@@ -79,13 +79,13 @@ export default function TvPage() {
                 </span>
               )}
             </div>
-            <h1 className={`font-display text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-none ${phaseColor}`}>
+            <h1 className={`break-safe font-display text-4xl font-bold tracking-tight leading-none sm:text-5xl md:text-6xl lg:text-7xl ${phaseColor}`}>
               {relayState.phaseLabel}
             </h1>
           </div>
-          <div className="text-right">
+          <div className="w-full text-left sm:w-auto sm:text-right">
             <p className="text-sm font-bold uppercase tracking-[0.2em] text-text-faint mb-2">Temps restant</p>
-            <div className={`font-display text-7xl md:text-8xl lg:text-[7rem] font-black tracking-tighter leading-none tabular-nums ${phaseColor} ${isUrgent ? "animate-pulse text-hot" : ""}`}>
+            <div className={`font-display text-6xl font-black tracking-tighter leading-none tabular-nums sm:text-7xl md:text-8xl lg:text-[7rem] ${phaseColor} ${isUrgent ? "animate-pulse text-hot" : ""}`}>
               {formatClock(relayState.remainingMs)}
             </div>
           </div>
@@ -100,37 +100,41 @@ export default function TvPage() {
         </div>
 
         {/* ── SUBJECT BAR ── */}
-        <section className="shrink-0 flex justify-between items-center bg-surface border border-border rounded-2xl p-6 shadow-sm">
-          <div className="flex-1 min-w-0 pr-8">
+        <section className="shrink-0 flex flex-col gap-5 bg-surface border border-border rounded-2xl p-6 shadow-sm lg:flex-row lg:items-center lg:justify-between">
+          <div className="min-w-0 flex-1 lg:pr-8">
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan mb-2">Sujet Actif</p>
             {subject ? (
-              <div>
-                <h2 className="font-display text-4xl font-bold tracking-tight text-text truncate mb-3">{subject.title}</h2>
-                <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xl">
-                  <span className="text-text-muted">Fichier :</span>
-                  <span className="font-mono font-bold text-cyan bg-cyan/10 px-3 py-1 rounded-lg border border-cyan/20">{subject.fileName}</span>
-                  <span className="text-text-muted pl-2">Fonction :</span>
-                  <span className="font-mono font-bold text-cyan bg-cyan/10 px-3 py-1 rounded-lg border border-cyan/20">{subject.functionName}</span>
+              <div className="min-w-0">
+                <h2 className="break-safe mb-3 font-display text-2xl font-bold tracking-tight text-text sm:text-3xl lg:text-4xl">{subject.title}</h2>
+                <div className="flex flex-col gap-3 text-base sm:text-lg lg:text-xl">
+                  <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-4">
+                    <span className="shrink-0 text-text-muted">Fichier :</span>
+                    <span className="code-break-safe rounded-lg border border-cyan/20 bg-cyan/10 px-3 py-1 font-mono font-bold text-cyan">{subject.fileName}</span>
+                  </div>
+                  <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-4">
+                    <span className="shrink-0 text-text-muted">Fonction :</span>
+                    <span className="code-break-safe rounded-lg border border-cyan/20 bg-cyan/10 px-3 py-1 font-mono font-bold text-cyan">{subject.functionName}</span>
+                  </div>
                 </div>
-                <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-lg">
-                  <span className="text-text-muted">Prototype :</span>
-                  <code className="font-mono font-bold text-cyan bg-cyan/10 px-3 py-1 rounded-lg border border-cyan/20">
+                <div className="mt-3 flex min-w-0 flex-col gap-2 text-base sm:text-lg">
+                  <span className="shrink-0 text-text-muted">Prototype :</span>
+                  <code className="code-break-safe rounded-lg border border-cyan/20 bg-cyan/10 px-3 py-1 font-mono font-bold text-cyan">
                     {getFunctionPrototype(subject.functionName, subject.prototype)}
                   </code>
                 </div>
               </div>
             ) : (
-              <div>
-                <h2 className="font-display text-4xl font-bold tracking-tight text-text-faint">Sujet en attente</h2>
-                <p className="text-xl text-text-muted mt-2">L'administrateur n'a pas encore assigné de sujet.</p>
+              <div className="min-w-0">
+                <h2 className="break-safe font-display text-2xl font-bold tracking-tight text-text-faint sm:text-3xl lg:text-4xl">Sujet en attente</h2>
+                <p className="mt-2 text-base text-text-muted sm:text-lg lg:text-xl">L'administrateur n'a pas encore assigné de sujet.</p>
               </div>
             )}
           </div>
-          <div className="shrink-0 flex items-center gap-6 border-l border-border pl-8">
-            <div className="text-right">
+          <div className="flex flex-col gap-4 border-t border-border pt-5 lg:shrink-0 lg:items-center lg:gap-6 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0">
+            <div className="min-w-0 text-left lg:text-right">
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-text-muted mb-2">Brief Public</p>
-              <p className="font-mono text-base font-bold text-accent-light bg-accent/10 px-3 py-1.5 rounded-lg border border-accent/20">
-                {briefUrl.replace(/^https?:\/\//, '')}
+              <p className="code-break-safe rounded-lg border border-accent/20 bg-accent/10 px-3 py-1.5 font-mono text-sm font-bold text-accent-light sm:text-base">
+                {briefUrl.replace(/^https?:\/\//, "")}
               </p>
             </div>
             <div className="bg-white p-2 rounded-xl h-24 w-24 shrink-0 shadow-sm border border-border">
@@ -140,10 +144,10 @@ export default function TvPage() {
         </section>
 
         {/* ── MAIN CONTENT: PODIUM & LEADERBOARD ── */}
-        <div className="flex-1 flex gap-6 min-h-0">
+        <div className="flex-1 flex min-h-0 flex-col gap-6 lg:flex-row">
           
           {/* Left: Podium (Fixed height) */}
-          <div className="w-[40%] flex flex-col gap-6 min-h-0">
+          <div className="flex min-h-0 w-full flex-col gap-6 lg:w-[40%]">
             {/* Leader */}
             <div className="flex-1 bg-accent/5 border border-accent/30 rounded-2xl p-6 md:p-8 flex flex-col justify-center text-center relative overflow-hidden">
               <div className="absolute top-5 left-5 bg-warn text-void font-black text-2xl w-12 h-12 flex items-center justify-center rounded-xl shadow-sm">1</div>
@@ -170,7 +174,7 @@ export default function TvPage() {
             </div>
             
             {/* Rank 2 & 3 */}
-            <div className="shrink-0 grid grid-cols-2 gap-6">
+            <div className="shrink-0 grid grid-cols-1 gap-6 sm:grid-cols-2">
               {teams.slice(1, 3).map(team => (
                 <div key={team.id} className="bg-surface border border-border rounded-2xl p-5 flex flex-col relative shadow-sm">
                   <div className={`absolute top-4 right-4 font-black text-lg w-8 h-8 flex items-center justify-center rounded-lg ${team.rank === 2 ? 'bg-elevated text-text-muted border border-border' : 'bg-elevated text-amber-600/70 border border-border'}`}>
@@ -198,10 +202,10 @@ export default function TvPage() {
           </div>
 
           {/* Right: Leaderboard List (Scrollable) */}
-          <div className="w-[60%] flex flex-col bg-surface border border-border rounded-2xl min-h-0 shadow-sm">
-            <div className="shrink-0 px-6 py-4 border-b border-border bg-elevated/50 flex justify-between items-center">
-              <h3 className="font-display font-bold text-xl text-text uppercase tracking-widest">Classement Live</h3>
-              <span className="px-3 py-1 bg-surface border border-border rounded-full text-sm font-bold text-text-muted">
+          <div className="flex min-h-0 w-full flex-col rounded-2xl border border-border bg-surface shadow-sm lg:w-[60%]">
+            <div className="shrink-0 flex flex-col gap-3 border-b border-border bg-elevated/50 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+              <h3 className="break-safe font-display text-xl font-bold uppercase tracking-widest text-text">Classement Live</h3>
+              <span className="w-fit px-3 py-1 bg-surface border border-border rounded-full text-sm font-bold text-text-muted">
                 {teams.length} équipes
               </span>
             </div>

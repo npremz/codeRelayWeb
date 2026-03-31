@@ -196,11 +196,11 @@ export function JudgeScreen({ staffRole }: JudgeScreenProps) {
               </div>
               <div className="flex items-start justify-between gap-4">
                 <span className="text-sm text-text-muted">Sujet</span>
-                <div className="text-right">
-                  <p className="text-sm font-semibold text-text">
+                <div className="min-w-0 max-w-[70%] text-right">
+                  <p className="break-safe text-sm font-semibold text-text">
                     {currentRound?.subject?.title ?? "Non assigné"}
                   </p>
-                  <p className="text-xs text-text-faint">
+                  <p className="break-safe text-xs text-text-faint">
                     {currentRound?.subject?.fileName ?? "Aucun fichier défini"}
                   </p>
                 </div>

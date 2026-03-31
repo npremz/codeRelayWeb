@@ -422,22 +422,23 @@ export function AdminScreen({ staffRole }: AdminScreenProps) {
             {/* Current round info */}
             {currentRound && (
               <div className="mb-5 rounded-xl border border-accent/20 bg-accent/5 px-5 py-4">
-                <div className="flex items-center justify-between">
-                  <div>
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0">
                     <p className="text-xs font-bold uppercase tracking-wider text-accent-light">Manche active</p>
-                    <p className="mt-1 font-display text-xl font-bold tracking-tight text-text">
+                    <p className="mt-1 font-display text-xl font-bold tracking-tight text-text break-safe">
                       {currentRound.name || `Manche ${currentRound.sequence}`}
                     </p>
                     {currentRound.subject ? (
-                      <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-text-muted">
-                        <span>{`${currentRound.subject.title} · ${currentRound.subject.fileName}`}</span>
+                      <div className="mt-2 min-w-0 space-y-2 text-sm text-text-muted">
+                        <p className="break-safe">{currentRound.subject.title}</p>
+                        <p className="code-break-safe text-xs text-text-faint">{currentRound.subject.fileName}</p>
                         {renderDifficultyBadge(currentRound.subject)}
                       </div>
                     ) : (
                       <p className="mt-1 text-sm text-text-muted">Aucun sujet assigné</p>
                     )}
                   </div>
-                  <div className="text-right">
+                  <div className="shrink-0 text-left sm:text-right">
                     <p className="font-display text-3xl font-bold text-accent-light">{currentRound.teamCount}</p>
                     <p className="text-xs text-text-faint">équipes</p>
                   </div>
@@ -452,26 +453,27 @@ export function AdminScreen({ staffRole }: AdminScreenProps) {
                 {rounds.map((r) => (
                   <div
                     key={r.id}
-                    className={`flex items-center justify-between rounded-xl border px-4 py-3 transition-all ${
+                    className={`flex flex-col gap-3 rounded-xl border px-4 py-3 transition-all sm:flex-row sm:items-start sm:justify-between ${
                       r.isCurrent
                         ? "border-accent/30 bg-accent/8"
                         : "border-border bg-elevated/30 hover:border-border-hover"
                     }`}
                   >
-                    <div className="flex items-center gap-3">
+                    <div className="flex min-w-0 items-center gap-3">
                       {r.isCurrent && (
                         <span className="inline-block h-2.5 w-2.5 rounded-full bg-accent animate-pulse-glow" />
                       )}
-                      <div>
-                        <p className={`text-sm font-bold ${r.isCurrent ? "text-accent-light" : "text-text"}`}>
+                      <div className="min-w-0">
+                        <p className={`break-safe text-sm font-bold ${r.isCurrent ? "text-accent-light" : "text-text"}`}>
                           {r.name || `Manche ${r.sequence}`}
                         </p>
                         <p className="text-xs text-text-faint">
                           {getRoundPhaseLabel(r)} · {r.teamCount} équipes
                         </p>
                         {r.subject ? (
-                          <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-text-faint">
-                            <span>{`${r.subject.title} · ${r.subject.fileName}`}</span>
+                          <div className="mt-1 min-w-0 space-y-1 text-xs text-text-faint">
+                            <p className="break-safe">{r.subject.title}</p>
+                            <p className="code-break-safe">{r.subject.fileName}</p>
                             {renderDifficultyBadge(r.subject)}
                           </div>
                         ) : (
@@ -481,7 +483,7 @@ export function AdminScreen({ staffRole }: AdminScreenProps) {
                     </div>
                     {!r.isCurrent && (
                       <button
-                        className="rounded-lg border border-accent/20 bg-accent/10 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-accent-light transition-all hover:bg-accent/20 disabled:opacity-40"
+                        className="w-full rounded-lg border border-accent/20 bg-accent/10 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-accent-light transition-all hover:bg-accent/20 disabled:opacity-40 sm:w-auto"
                         onClick={() => handleSwitchRound(r.id)}
                         disabled={adminBusy}
                         type="button"
@@ -537,19 +539,19 @@ export function AdminScreen({ staffRole }: AdminScreenProps) {
                   </select>
                 </label>
                 {newRoundSubject && (
-                  <div className="rounded-xl border border-cyan/20 bg-cyan/5 px-4 py-3">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="text-sm font-bold text-cyan">{newRoundSubject.title}</p>
+                  <div className="min-w-0 rounded-xl border border-cyan/20 bg-cyan/5 px-4 py-3">
+                    <div className="flex min-w-0 flex-wrap items-center gap-2">
+                      <p className="break-safe text-sm font-bold text-cyan">{newRoundSubject.title}</p>
                       {renderDifficultyBadge(newRoundSubject)}
                     </div>
-                    <p className="mt-1 text-sm text-text">Fichier: {newRoundSubject.fileName}</p>
-                    <p className="mt-1 text-xs text-text-muted">
+                    <p className="mt-1 text-sm text-text break-safe">Fichier: {newRoundSubject.fileName}</p>
+                    <p className="mt-1 text-xs text-text-muted break-safe">
                       Fonction: {newRoundSubject.functionName}
                     </p>
                     {resolveSubjectPrototype(newRoundSubject) && (
-                      <div className="mt-2 rounded-lg border border-border/60 bg-surface px-3 py-2">
+                      <div className="mt-2 min-w-0 rounded-lg border border-border/60 bg-surface px-3 py-2">
                         <p className="text-[11px] font-bold uppercase tracking-wider text-text-faint">Prototype</p>
-                        <code className="mt-1 block text-sm text-text">{resolveSubjectPrototype(newRoundSubject)}</code>
+                        <code className="code-break-safe mt-1 block text-sm text-text">{resolveSubjectPrototype(newRoundSubject)}</code>
                       </div>
                     )}
                   </div>
@@ -621,24 +623,24 @@ export function AdminScreen({ staffRole }: AdminScreenProps) {
               <p className="text-sm text-text-muted">Chargement du catalogue des sujets...</p>
             ) : (
               <div className="space-y-4">
-                <div className="rounded-xl border border-cyan/20 bg-cyan/5 px-4 py-4">
+                <div className="min-w-0 rounded-xl border border-cyan/20 bg-cyan/5 px-4 py-4">
                   <p className="text-xs font-bold uppercase tracking-wider text-cyan">Sujet actuel</p>
                   {currentRound?.subject ? (
                     <>
-                      <div className="mt-2 flex flex-wrap items-center gap-2">
-                        <p className="font-display text-xl font-bold tracking-tight text-text">
+                      <div className="mt-2 flex min-w-0 flex-wrap items-center gap-2">
+                        <p className="break-safe font-display text-xl font-bold tracking-tight text-text">
                           {currentRound.subject.title}
                         </p>
                         {renderDifficultyBadge(currentRound.subject)}
                       </div>
-                      <p className="mt-1 text-sm text-text">Fichier: {currentRound.subject.fileName}</p>
-                      <p className="mt-1 text-xs text-text-muted">
+                      <p className="mt-1 text-sm text-text break-safe">Fichier: {currentRound.subject.fileName}</p>
+                      <p className="mt-1 text-xs text-text-muted break-safe">
                         Fonction: {currentRound.subject.functionName}
                       </p>
                       {resolveSubjectPrototype(currentRound.subject) && (
-                        <div className="mt-2 rounded-lg border border-border/60 bg-surface px-3 py-2">
+                        <div className="mt-2 min-w-0 rounded-lg border border-border/60 bg-surface px-3 py-2">
                           <p className="text-[11px] font-bold uppercase tracking-wider text-text-faint">Prototype</p>
-                          <code className="mt-1 block text-sm text-text">{resolveSubjectPrototype(currentRound.subject)}</code>
+                          <code className="code-break-safe mt-1 block text-sm text-text">{resolveSubjectPrototype(currentRound.subject)}</code>
                         </div>
                       )}
                       {currentRound.subject.brief && (
@@ -670,19 +672,19 @@ export function AdminScreen({ staffRole }: AdminScreenProps) {
                 </label>
 
                 {selectedSubject && (
-                  <div className="rounded-xl border border-border bg-elevated/30 px-4 py-4">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="text-sm font-bold text-text">{selectedSubject.title}</p>
+                  <div className="min-w-0 rounded-xl border border-border bg-elevated/30 px-4 py-4">
+                    <div className="flex min-w-0 flex-wrap items-center gap-2">
+                      <p className="break-safe text-sm font-bold text-text">{selectedSubject.title}</p>
                       {renderDifficultyBadge(selectedSubject)}
                     </div>
-                    <p className="mt-1 text-sm text-text-muted">Fichier attendu: {selectedSubject.fileName}</p>
-                    <p className="mt-1 text-xs text-text-faint">
+                    <p className="mt-1 text-sm text-text-muted break-safe">Fichier attendu: {selectedSubject.fileName}</p>
+                    <p className="mt-1 text-xs text-text-faint break-safe">
                       Fonction: {selectedSubject.functionName}
                     </p>
                     {resolveSubjectPrototype(selectedSubject) && (
-                      <div className="mt-2 rounded-lg border border-border/60 bg-surface px-3 py-2">
+                      <div className="mt-2 min-w-0 rounded-lg border border-border/60 bg-surface px-3 py-2">
                         <p className="text-[11px] font-bold uppercase tracking-wider text-text-faint">Prototype</p>
-                        <code className="mt-1 block text-sm text-text">{resolveSubjectPrototype(selectedSubject)}</code>
+                        <code className="code-break-safe mt-1 block text-sm text-text">{resolveSubjectPrototype(selectedSubject)}</code>
                       </div>
                     )}
                     {selectedSubject.brief && (

@@ -226,6 +226,18 @@ a:focus-visible, button:focus-visible, input:focus-visible {
   cursor: not-allowed;
 }
 
+.break-safe {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.code-break-safe {
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-all;
+}
+
 /* ────────────────────────────────────────────────── */
 /*  STAT NUMBERS                                       */
 /* ────────────────────────────────────────────────── */
