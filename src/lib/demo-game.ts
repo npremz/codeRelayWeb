@@ -40,6 +40,7 @@ export const demoTeams: TeamSeed[] = [
     name: "Byte Breakers",
     station: "PC-01",
     status: "coding",
+    carryOverScore: 0,
     submittedAfterSlice: 7,
     members: [
       { id: "bb-a", name: "Lina", relayOrder: 1 },
@@ -58,6 +59,7 @@ export const demoTeams: TeamSeed[] = [
     name: "Stack Smashers",
     station: "PC-02",
     status: "coding",
+    carryOverScore: 0,
     submittedAfterSlice: 8,
     members: [
       { id: "ss-a", name: "Noah", relayOrder: 1 },
@@ -76,6 +78,7 @@ export const demoTeams: TeamSeed[] = [
     name: "Null Pointers",
     station: "PC-03",
     status: "ready",
+    carryOverScore: 0,
     submittedAfterSlice: 10,
     members: [
       { id: "np-a", name: "Mila", relayOrder: 1 },
@@ -94,6 +97,7 @@ export const demoTeams: TeamSeed[] = [
     name: "Complexity Crew",
     station: "PC-04",
     status: "ready",
+    carryOverScore: 0,
     submittedAfterSlice: undefined,
     members: [
       { id: "cc-a", name: "Ines", relayOrder: 1 },
@@ -235,6 +239,16 @@ function getSpeedBonus(order: number | null): number {
   return 0;
 }
 
+function getScoreCardTotal(scoreCard: ScoreCard): number {
+  return (
+    scoreCard.correction +
+    scoreCard.edgeCases +
+    scoreCard.complexity +
+    scoreCard.readability +
+    scoreCard.speedBonus
+  );
+}
+
 function compareTeams(a: RankComparableTeam, b: RankComparableTeam): number {
   if (b.totalScore !== a.totalScore) {
     return b.totalScore - a.totalScore;
@@ -307,6 +321,7 @@ export function buildLiveTeams(seeds: TeamSeed[], state: RelayState): LiveTeam[]
       ...team.score,
       speedBonus
     };
+    const roundScore = getScoreCardTotal(scoreCard);
     const computedStatus =
       team.status === "scored"
         ? "scored"
@@ -322,12 +337,8 @@ export function buildLiveTeams(seeds: TeamSeed[], state: RelayState): LiveTeam[]
       ...team,
       status: computedStatus,
       activeMember,
-      totalScore:
-        scoreCard.correction +
-        scoreCard.edgeCases +
-        scoreCard.complexity +
-        scoreCard.readability +
-        scoreCard.speedBonus,
+      roundScore,
+      totalScore: (team.carryOverScore ?? 0) + roundScore,
       progress,
       submissionOrder,
       scoreCard,

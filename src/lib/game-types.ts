@@ -37,6 +37,7 @@ export type TeamSeed = {
   station: string;
   members: TeamMember[];
   status: TeamStatus;
+  carryOverScore: number;
   submittedAfterSlice?: number;
   submittedAt?: string | null;
   score: Omit<ScoreCard, "speedBonus">;
@@ -51,6 +52,7 @@ export type PublicTeam = TeamSeed & {
 
 export type LiveTeam = TeamSeed & {
   activeMember: TeamMember | null;
+  roundScore: number;
   totalScore: number;
   progress: number;
   rank: number;

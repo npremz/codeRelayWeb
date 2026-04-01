@@ -92,6 +92,40 @@ function getStationLabel(index: number) {
   return `PC-${String(index + 1).padStart(2, "0")}`;
 }
 
+function getSpeedBonus(order: number | null): number {
+  if (order === 1) {
+    return 10;
+  }
+
+  if (order === 2) {
+    return 6;
+  }
+
+  if (order === 3) {
+    return 3;
+  }
+
+  return 0;
+}
+
+function getScoreTotal(
+  score: {
+    correction?: number;
+    edgeCases?: number;
+    complexity?: number;
+    readability?: number;
+  } | null | undefined,
+  speedBonus = 0
+) {
+  return (
+    (score?.correction ?? 0) +
+    (score?.edgeCases ?? 0) +
+    (score?.complexity ?? 0) +
+    (score?.readability ?? 0) +
+    speedBonus
+  );
+}
+
 function toDbPhase(phase: RoundControlState["phase"]): PrismaRoundPhase {
   switch (phase) {
     case "draft":
@@ -251,7 +285,7 @@ function getLatestUpdatedAt(entry: RoundEntryWithRelations) {
   return new Date(Math.max(...timestamps)).toISOString();
 }
 
-function toPublicTeam(entry: RoundEntryWithRelations): PublicTeam {
+function toPublicTeam(entry: RoundEntryWithRelations, carryOverScore = 0): PublicTeam {
   return {
     id: entry.team.id,
     teamCode: entry.team.teamCode,
@@ -263,6 +297,7 @@ function toPublicTeam(entry: RoundEntryWithRelations): PublicTeam {
       relayOrder: member.relayOrder
     })),
     status: fromDbStatus(entry.status),
+    carryOverScore,
     submittedAt: entry.submittedAt?.toISOString() ?? null,
     score: {
       correction: entry.score?.correction ?? 0,
@@ -275,6 +310,94 @@ function toPublicTeam(entry: RoundEntryWithRelations): PublicTeam {
     updatedAt: getLatestUpdatedAt(entry),
     locked: entry.locked
   };
+}
+
+async function listCarryOverScoreByTeamId(
+  client: StoreClient,
+  currentRoundSequence: number,
+  teamIds: string[]
+) {
+  if (currentRoundSequence <= 1 || teamIds.length === 0) {
+    return new Map<string, number>();
+  }
+
+  const previousEntries = await client.roundEntry.findMany({
+    where: {
+      round: {
+        sequence: {
+          lt: currentRoundSequence
+        }
+      }
+    },
+    select: {
+      id: true,
+      roundId: true,
+      teamId: true,
+      submittedAt: true,
+      createdAt: true,
+      score: {
+        select: {
+          correction: true,
+          edgeCases: true,
+          complexity: true,
+          readability: true
+        }
+      }
+    }
+  });
+
+  const entriesByRoundId = new Map<string, typeof previousEntries>();
+
+  for (const entry of previousEntries) {
+    const roundEntries = entriesByRoundId.get(entry.roundId);
+
+    if (roundEntries) {
+      roundEntries.push(entry);
+    } else {
+      entriesByRoundId.set(entry.roundId, [entry]);
+    }
+  }
+
+  const submissionOrderByEntryId = new Map<string, number>();
+
+  for (const roundEntries of entriesByRoundId.values()) {
+    const submittedEntries = roundEntries
+      .filter((entry) => entry.submittedAt)
+      .sort((a, b) => {
+        const submittedAtDiff = (a.submittedAt?.getTime() ?? 0) - (b.submittedAt?.getTime() ?? 0);
+
+        if (submittedAtDiff !== 0) {
+          return submittedAtDiff;
+        }
+
+        const createdAtDiff = a.createdAt.getTime() - b.createdAt.getTime();
+
+        if (createdAtDiff !== 0) {
+          return createdAtDiff;
+        }
+
+        return a.id.localeCompare(b.id);
+      });
+
+    for (const [index, entry] of submittedEntries.entries()) {
+      submissionOrderByEntryId.set(entry.id, index + 1);
+    }
+  }
+
+  const selectedTeamIds = new Set(teamIds);
+  const carryOverScoreByTeamId = new Map<string, number>();
+
+  for (const entry of previousEntries) {
+    if (!selectedTeamIds.has(entry.teamId)) {
+      continue;
+    }
+
+    const speedBonus = getSpeedBonus(submissionOrderByEntryId.get(entry.id) ?? null);
+    const total = getScoreTotal(entry.score, speedBonus);
+    carryOverScoreByTeamId.set(entry.teamId, (carryOverScoreByTeamId.get(entry.teamId) ?? 0) + total);
+  }
+
+  return carryOverScoreByTeamId;
 }
 
 async function findCurrentRound(client: StoreClient) {
@@ -479,7 +602,13 @@ export async function listStoredTeams(): Promise<PublicTeam[]> {
     }
   });
 
-  return entries.map(toPublicTeam);
+  const carryOverScoreByTeamId = await listCarryOverScoreByTeamId(
+    prisma,
+    currentRound.sequence,
+    entries.map((entry) => entry.teamId)
+  );
+
+  return entries.map((entry) => toPublicTeam(entry, carryOverScoreByTeamId.get(entry.teamId) ?? 0));
 }
 
 export async function getRoundState(): Promise<RoundControlState> {

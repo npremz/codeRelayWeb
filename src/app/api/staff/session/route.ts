@@ -1,5 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { StaffRole, clearStaffSessionCookie, createStaffSessionCookie, verifyAccessCode } from "@/lib/staff-auth";
+import {
+  StaffRole,
+  clearStaffSessionCookie,
+  createStaffSessionCookie,
+  resolveRoleFromAccessCode,
+  verifyAccessCode
+} from "@/lib/staff-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -11,22 +17,34 @@ type SessionBody = {
 
 export async function POST(request: NextRequest) {
   const body = (await request.json()) as SessionBody;
-  const role = body.role;
+  const requestedRole = body.role;
   const code = body.code ?? "";
 
-  if (role !== "admin" && role !== "judge") {
+  if (requestedRole !== "admin" && requestedRole !== "judge") {
     return NextResponse.json({ error: "Role invalide." }, { status: 400 });
   }
 
-  if (!verifyAccessCode(role, code)) {
+  const resolvedRole =
+    verifyAccessCode(requestedRole, code)
+      ? requestedRole
+      : resolveRoleFromAccessCode(code);
+
+  if (!resolvedRole) {
     return NextResponse.json({ error: "Code d'acces invalide." }, { status: 401 });
   }
 
-  await createStaffSessionCookie(role);
+  await createStaffSessionCookie(resolvedRole);
+
+  const redirectPath =
+    body.nextPath && body.nextPath.startsWith("/") && body.nextPath.startsWith(`/${resolvedRole}`)
+      ? body.nextPath
+      : resolvedRole === "admin"
+        ? "/admin"
+        : "/judge";
 
   return NextResponse.json({
     ok: true,
-    redirectPath: body.nextPath && body.nextPath.startsWith("/") ? body.nextPath : role === "admin" ? "/admin" : "/judge"
+    redirectPath
   });
 }
 

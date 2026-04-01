@@ -79,6 +79,24 @@ export function verifyAccessCode(role: StaffRole, candidate: string) {
   return candidate.trim() === getAccessCode(role);
 }
 
+export function resolveRoleFromAccessCode(candidate: string): StaffRole | null {
+  const normalizedCandidate = candidate.trim();
+
+  if (!normalizedCandidate) {
+    return null;
+  }
+
+  if (verifyAccessCode("admin", normalizedCandidate)) {
+    return "admin";
+  }
+
+  if (verifyAccessCode("judge", normalizedCandidate)) {
+    return "judge";
+  }
+
+  return null;
+}
+
 export async function createStaffSessionCookie(role: StaffRole) {
   const cookieStore = await cookies();
   const expiresAt = Date.now() + STAFF_SESSION_TTL_MS;

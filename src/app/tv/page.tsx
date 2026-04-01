@@ -162,7 +162,12 @@ export default function TvPage() {
                   </div>
                   <div className="mt-auto">
                     <p className="font-display text-[7rem] font-black text-accent leading-none tabular-nums drop-shadow-sm">{leader.totalScore}</p>
-                    <p className="text-lg font-bold text-accent/50 mt-1">/ 100 points</p>
+                    <p className="text-lg font-bold text-accent/50 mt-1">points cumulés</p>
+                    {leader.carryOverScore > 0 && (
+                      <p className="mt-2 text-sm font-semibold text-text-muted">
+                        {leader.carryOverScore} reportés + {leader.roundScore} sur cette manche
+                      </p>
+                    )}
                   </div>
                 </>
               ) : (
@@ -185,7 +190,14 @@ export default function TvPage() {
                     {team.station} <span className="mx-1">&bull;</span> <span className="font-mono">{team.teamCode}</span>
                   </p>
                   <div className="mt-auto flex items-end justify-between">
-                    <p className="font-display text-5xl font-black text-text tabular-nums leading-none">{team.totalScore}</p>
+                    <div>
+                      <p className="font-display text-5xl font-black text-text tabular-nums leading-none">{team.totalScore}</p>
+                      {team.carryOverScore > 0 && (
+                        <p className="mt-1 text-xs font-semibold text-text-faint">
+                          {team.carryOverScore} + {team.roundScore}
+                        </p>
+                      )}
+                    </div>
                     {team.activeMember && (
                       <span className="flex h-3 w-3 relative">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-hot opacity-75"></span>

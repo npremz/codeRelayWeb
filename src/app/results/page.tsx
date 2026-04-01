@@ -55,8 +55,8 @@ export default function ResultsPage() {
                   </h2>
                   <p className="mt-1 text-sm text-text-muted">
                     {isFinal
-                      ? "Résultats définitifs — classement figé"
-                      : "Les scores peuvent encore évoluer"}
+                      ? "Résultats définitifs sur score cumulé"
+                      : "Les scores cumulés peuvent encore évoluer"}
                   </p>
                 </div>
               </div>
@@ -92,7 +92,8 @@ export default function ResultsPage() {
         <div className="space-y-6">
           <Panel accent="warn" eyebrow="Départage" title="Explication du classement">
             <p className="text-sm leading-relaxed text-text-muted">
-              Ordre officiel de départage : correction, edge cases, complexité, puis ordre de soumission.
+              Le classement est cumulé entre les manches. En cas d'égalité au total, le départage se fait sur la
+              manche courante : correction, edge cases, complexité, puis ordre de soumission.
             </p>
 
             <div className="mt-5 space-y-4">
@@ -135,6 +136,10 @@ export default function ResultsPage() {
 
           <Panel accent="cyan" eyebrow="Légende" title="Lire le tuple de départage">
             <div className="grid gap-3">
+              <div className="flex items-center gap-4 rounded-lg border border-accent/20 bg-accent/5 px-5 py-3.5">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent/10 font-mono text-sm font-bold text-accent-light">T</span>
+                <span className="text-sm text-text-muted">Le score affiché est le total cumulé sur toutes les manches jouées</span>
+              </div>
               <div className="flex items-center gap-4 rounded-lg border border-border bg-elevated/50 px-5 py-3.5">
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-hot/10 font-mono text-sm font-bold text-hot">C</span>
                 <span className="text-sm text-text-muted">Note de correction sur 40</span>

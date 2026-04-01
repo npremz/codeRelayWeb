@@ -65,7 +65,7 @@ export function RankingTable({
               {!compact && (
                 <th className="hidden px-5 py-4 text-left text-xs font-bold uppercase tracking-wider text-text-faint lg:table-cell">Joueur actif</th>
               )}
-              <th className="px-5 py-4 text-right text-xs font-bold uppercase tracking-wider text-text-faint">Score</th>
+              <th className="px-5 py-4 text-right text-xs font-bold uppercase tracking-wider text-text-faint">Total</th>
             </tr>
           </thead>
           <tbody>
@@ -120,6 +120,11 @@ export function RankingTable({
                     {!compact && (
                       <p className="mt-0.5 text-xs text-text-faint">
                         {formatTieBreakTuple(team)}
+                      </p>
+                    )}
+                    {!compact && team.carryOverScore > 0 && (
+                      <p className="mt-0.5 text-xs text-text-faint">
+                        {team.carryOverScore} reportés + {team.roundScore} sur cette manche
                       </p>
                     )}
                   </td>
