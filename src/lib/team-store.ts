@@ -92,6 +92,33 @@ function getStationLabel(index: number) {
   return `PC-${String(index + 1).padStart(2, "0")}`;
 }
 
+function toDbTvDisplayMode(mode: RoundControlState["tvDisplayMode"]) {
+  switch (mode) {
+    case "brief":
+      return "BRIEF" as const;
+    case "leaderboard":
+      return "LEADERBOARD" as const;
+    case "registration_qr":
+      return "REGISTRATION_QR" as const;
+    default:
+      return "LEADERBOARD" as const;
+  }
+}
+
+function fromDbTvDisplayMode(mode: string | null | undefined): RoundControlState["tvDisplayMode"] {
+  switch (mode) {
+    case "BRIEF":
+      return "brief";
+    case "LEADERBOARD":
+    case "LIVE":
+      return "leaderboard";
+    case "REGISTRATION_QR":
+      return "registration_qr";
+    default:
+      return "leaderboard";
+  }
+}
+
 function getSpeedBonus(order: number | null): number {
   if (order === 1) {
     return 10;
@@ -239,6 +266,7 @@ function toRoundState(round: PrismaRound): RoundControlState {
     reflectionMs: round.reflectionMs,
     relaySliceMs: round.relaySliceMs,
     totalRelaySlices: round.totalRelaySlices,
+    tvDisplayMode: fromDbTvDisplayMode(round.tvDisplayMode),
     updatedAt: round.updatedAt.toISOString()
   };
 }
@@ -424,7 +452,8 @@ async function createInitialRound(client: StoreClient) {
       pausedElapsedMs: null,
       reflectionMs: defaultRoundState.reflectionMs,
       relaySliceMs: defaultRoundState.relaySliceMs,
-      totalRelaySlices: defaultRoundState.totalRelaySlices
+      totalRelaySlices: defaultRoundState.totalRelaySlices,
+      tvDisplayMode: toDbTvDisplayMode(defaultRoundState.tvDisplayMode)
     }
   });
 }
@@ -994,6 +1023,37 @@ export async function applyAdminRoundAction(action: AdminRoundAction): Promise<R
         });
         await setPendingEntriesLocked(tx, currentRound.id, true);
         break;
+      case "show_brief_tv":
+        await tx.round.update({
+          where: {
+            id: currentRound.id
+          },
+          data: {
+            tvDisplayMode: "BRIEF"
+          }
+        });
+        break;
+      case "show_leaderboard_tv":
+      case "show_live_tv":
+        await tx.round.update({
+          where: {
+            id: currentRound.id
+          },
+          data: {
+            tvDisplayMode: "LEADERBOARD"
+          }
+        });
+        break;
+      case "show_registration_qr":
+        await tx.round.update({
+          where: {
+            id: currentRound.id
+          },
+          data: {
+            tvDisplayMode: "REGISTRATION_QR"
+          }
+        });
+        break;
       default:
         break;
     }
@@ -1071,7 +1131,8 @@ export async function createRound(input: AdminCreateRoundInput = {}): Promise<Ro
         pausedElapsedMs: null,
         reflectionMs: defaultRoundState.reflectionMs,
         relaySliceMs: defaultRoundState.relaySliceMs,
-        totalRelaySlices: defaultRoundState.totalRelaySlices
+        totalRelaySlices: defaultRoundState.totalRelaySlices,
+        tvDisplayMode: toDbTvDisplayMode(defaultRoundState.tvDisplayMode)
       }
     });
 

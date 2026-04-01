@@ -18,3 +18,13 @@ export function getPublicBriefUrl() {
 
   return `${getPublicAppUrl()}/brief`;
 }
+
+export function getPublicRegisterUrl() {
+  const configuredRegisterUrl = process.env.NEXT_PUBLIC_PUBLIC_REGISTER_URL?.trim();
+
+  if (configuredRegisterUrl) {
+    return configuredRegisterUrl;
+  }
+
+  return `${getPublicAppUrl()}/register`;
+}

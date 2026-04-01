@@ -4,6 +4,8 @@ export type RoundPhase = "draft" | ResumeRoundPhase | "paused" | "complete";
 
 export type TeamStatus = "registered" | "ready" | "coding" | "submitted" | "scored";
 
+export type TvDisplayMode = "brief" | "leaderboard" | "registration_qr";
+
 export const MIN_TEAM_MEMBERS = 2;
 export const MAX_TEAM_MEMBERS = 4;
 export const RELAY_SEAT_LABELS = ["A", "B", "C", "D"] as const;
@@ -70,6 +72,7 @@ export type RoundControlState = {
   reflectionMs: number;
   relaySliceMs: number;
   totalRelaySlices: number;
+  tvDisplayMode: TvDisplayMode;
   updatedAt: string;
 };
 
@@ -189,4 +192,8 @@ export type AdminRoundAction =
   | "start_relay"
   | "pause_round"
   | "resume_round"
-  | "close_round";
+  | "close_round"
+  | "show_brief_tv"
+  | "show_leaderboard_tv"
+  | "show_live_tv"
+  | "show_registration_qr";

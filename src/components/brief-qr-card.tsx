@@ -6,9 +6,10 @@ import QRCode from "qrcode";
 type BriefQrCardProps = {
   url: string;
   compact?: boolean;
+  bare?: boolean;
 };
 
-export function BriefQrCard({ url, compact = false }: BriefQrCardProps) {
+export function BriefQrCard({ url, compact = false, bare = false }: BriefQrCardProps) {
   const [qrDataUrl, setQrDataUrl] = useState("");
 
   useEffect(() => {
@@ -18,8 +19,8 @@ export function BriefQrCard({ url, compact = false }: BriefQrCardProps) {
       try {
         const dataUrl = await QRCode.toDataURL(url, {
           errorCorrectionLevel: "M",
-          margin: compact ? 0 : 1,
-          scale: 8,
+          margin: compact || bare ? 0 : 1,
+          scale: bare ? 14 : 8,
           color: {
             dark: "#0f172a",
             light: "#ffffff"
@@ -41,7 +42,19 @@ export function BriefQrCard({ url, compact = false }: BriefQrCardProps) {
     return () => {
       cancelled = true;
     };
-  }, [url, compact]);
+  }, [url, compact, bare]);
+
+  if (bare) {
+    return qrDataUrl ? (
+      <img
+        alt="QR code"
+        className="h-full w-full object-contain"
+        src={qrDataUrl}
+      />
+    ) : (
+      <div className="h-full w-full animate-pulse rounded-3xl bg-elevated" />
+    );
+  }
 
   if (compact) {
     return qrDataUrl ? (

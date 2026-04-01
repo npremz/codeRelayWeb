@@ -23,6 +23,7 @@ export const defaultRoundState: RoundControlState = {
   reflectionMs: REFLECTION_MS,
   relaySliceMs: RELAY_SLICE_MS,
   totalRelaySlices: RELAY_SLICES,
+  tvDisplayMode: "leaderboard",
   updatedAt: ""
 };
 
@@ -137,6 +138,11 @@ export function canRunAdminRoundAction(round: RoundControlState, action: AdminRo
       return round.phase === "paused";
     case "close_round":
       return round.phase !== "complete";
+    case "show_brief_tv":
+    case "show_leaderboard_tv":
+    case "show_live_tv":
+    case "show_registration_qr":
+      return true;
     default:
       return false;
   }

@@ -16,7 +16,7 @@ import {
 import { useRoundNotifications } from "@/lib/use-round-notifications";
 import { useLiveTeams } from "@/lib/use-live-teams";
 import { useEffect, useState } from "react";
-import { FileEdit, Lock, MessageCircle, Zap, Pause, Play, Flag, Radio } from "lucide-react";
+import { FileEdit, Lock, MessageCircle, Zap, Pause, Play, Flag, Radio, QrCode, Tv, FileText, Trophy } from "lucide-react";
 
 type AdminScreenProps = {
   staffRole: "admin" | "judge";
@@ -44,7 +44,11 @@ const actionConfig: Record<AdminRoundAction, { label: string; icon: React.ReactN
   start_relay: { label: "Lancer relais", icon: <Zap size={20} />, color: "text-hot", desc: "Démarrer les tours de codage" },
   pause_round: { label: "Pause", icon: <Pause size={20} />, color: "text-warn", desc: "Geler le chronomètre" },
   resume_round: { label: "Reprendre", icon: <Play size={20} />, color: "text-success", desc: "Relancer le chronomètre" },
-  close_round: { label: "Clôturer manche", icon: <Flag size={20} />, color: "text-accent-light", desc: "Terminer la manche en cours" }
+  close_round: { label: "Clôturer manche", icon: <Flag size={20} />, color: "text-accent-light", desc: "Terminer la manche en cours" },
+  show_brief_tv: { label: "Afficher le brief", icon: <FileText size={20} />, color: "text-cyan", desc: "Montrer uniquement le brief, le prototype et le sujet" },
+  show_leaderboard_tv: { label: "Afficher le classement", icon: <Trophy size={20} />, color: "text-warn", desc: "Montrer uniquement le classement TV" },
+  show_live_tv: { label: "Afficher le classement", icon: <Tv size={20} />, color: "text-accent-light", desc: "Alias de compatibilité vers la vue classement" },
+  show_registration_qr: { label: "Afficher QR inscription", icon: <QrCode size={20} />, color: "text-cyan", desc: "Montrer un QR vers la création d'équipe" }
 };
 
 async function readApiJson<T>(response: Response): Promise<T> {
@@ -144,6 +148,7 @@ export function AdminScreen({ staffRole }: AdminScreenProps) {
     "resume_round",
     "close_round"
   ];
+  const tvActions: AdminRoundAction[] = ["show_registration_qr", "show_brief_tv", "show_leaderboard_tv"];
 
   async function runRoundAction(action: AdminRoundAction) {
     setBusyAction(action);
@@ -360,6 +365,30 @@ export function AdminScreen({ staffRole }: AdminScreenProps) {
   const subjectEditingLocked = round.phase !== "draft";
   const subjectSelectionChanged = selectedSubjectId !== (currentRound?.subject?.id ?? "");
   const adminBusy = busyAction !== null || creatingRound || assigningSubject || resettingEvent;
+
+  function getTvModeLabel(mode: typeof round.tvDisplayMode) {
+    switch (mode) {
+      case "registration_qr":
+        return "QR inscription";
+      case "brief":
+        return "Brief";
+      case "leaderboard":
+      default:
+        return "Classement";
+    }
+  }
+
+  function getTvModeTextClass(mode: typeof round.tvDisplayMode) {
+    switch (mode) {
+      case "registration_qr":
+        return "text-cyan";
+      case "brief":
+        return "text-accent-light";
+      case "leaderboard":
+      default:
+        return "text-warn";
+    }
+  }
 
   function resolveSubjectDifficulty(subject: RoundSubject | null | undefined) {
     return subject?.difficulty ?? subjects.find((candidate) => candidate.id === subject?.id)?.difficulty;
@@ -750,6 +779,12 @@ export function AdminScreen({ staffRole }: AdminScreenProps) {
                 </span>
               </div>
               <div className="flex items-center justify-between">
+                <span className="text-sm text-text-muted">Mode TV</span>
+                <span className={`text-sm font-semibold ${getTvModeTextClass(round.tvDisplayMode)}`}>
+                  {getTvModeLabel(round.tvDisplayMode)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
                 <span className="text-sm text-text-muted">Équipes</span>
                 <span className="font-display text-xl font-bold text-text">{storedTeams.length}</span>
               </div>
@@ -766,6 +801,64 @@ export function AdminScreen({ staffRole }: AdminScreenProps) {
 
           {/* ── Phase timer ───────────────────────────── */}
           <PhaseTimer state={relayState} />
+
+          <Panel accent="cyan" eyebrow="TV" title="Pilotage de l'écran TV">
+            <div className="space-y-4">
+              <div className="rounded-xl border border-cyan/20 bg-cyan/5 px-4 py-4">
+                <p className="text-xs font-bold uppercase tracking-wider text-cyan">Vue active</p>
+                <p className="mt-2 font-display text-xl font-bold tracking-tight text-text">
+                  {round.tvDisplayMode === "registration_qr"
+                    ? "QR de création d'équipe"
+                    : round.tvDisplayMode === "brief"
+                      ? "Vue TV brief"
+                      : "Vue TV classement"}
+                </p>
+                <p className="mt-2 text-sm leading-6 text-text-muted">
+                  {round.tvDisplayMode === "registration_qr"
+                    ? "La TV affiche un QR code qui renvoie vers la page d'inscription des équipes."
+                    : round.tvDisplayMode === "brief"
+                      ? "La TV affiche uniquement le sujet, le prototype et le brief de la manche."
+                      : "La TV affiche uniquement le classement et le podium."}
+                </p>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                {tvActions.map((action) => {
+                  const config = actionConfig[action];
+                  const isActive =
+                    (action === "show_registration_qr" && round.tvDisplayMode === "registration_qr") ||
+                    (action === "show_brief_tv" && round.tvDisplayMode === "brief") ||
+                    (action === "show_leaderboard_tv" && round.tvDisplayMode === "leaderboard");
+
+                  return (
+                    <button
+                      key={action}
+                      className={`group flex items-center gap-3 rounded-xl border px-4 py-4 text-left transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
+                        isActive
+                          ? "border-accent/30 bg-accent/10"
+                          : "border-border bg-elevated/50 hover:border-border-hover hover:bg-elevated"
+                      }`}
+                      disabled={adminBusy || isActive}
+                      onClick={() => runRoundAction(action)}
+                      type="button"
+                    >
+                      <span className="text-xl">{config.icon}</span>
+                      <div>
+                        <span className={`text-sm font-bold ${config.color}`}>
+                          {busyAction === action ? "..." : config.label}
+                        </span>
+                        <p className="mt-0.5 text-xs text-text-faint">{config.desc}</p>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <a className="ghost-button w-full" href="/tv" target="_blank" rel="noreferrer">
+                Ouvrir la TV dans un nouvel onglet
+              </a>
+            </div>
+          </Panel>
 
           {/* ── Round controls ────────────────────────── */}
           <Panel accent="hot" eyebrow="Commandes" title="Actions opérateur">

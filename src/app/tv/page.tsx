@@ -3,11 +3,11 @@
 import { BriefQrCard } from "@/components/brief-qr-card";
 import { LiveNotificationBanner } from "@/components/live-notification-banner";
 import { buildLiveTeams, formatClock, getRelayState, getStatusLabel } from "@/lib/demo-game";
-import { getPublicBriefUrl } from "@/lib/public-brief";
+import { getPublicBriefUrl, getPublicRegisterUrl } from "@/lib/public-brief";
 import { useRoundNotifications } from "@/lib/use-round-notifications";
 import { useLiveTeams } from "@/lib/use-live-teams";
 import { useEffect, useState } from "react";
-import { Trophy, Medal, Tv } from "lucide-react";
+import { Trophy, Tv, Users, QrCode, FileText } from "lucide-react";
 
 function getFunctionPrototype(functionName: string, explicitPrototype?: string) {
   if (explicitPrototype?.trim()) {
@@ -57,6 +57,129 @@ export default function TvPage() {
   const timerBg = getTimerBg(relayState.phase);
   const subject = currentRound?.subject ?? null;
   const briefUrl = getPublicBriefUrl();
+  const registerUrl = getPublicRegisterUrl();
+
+  if (round.tvDisplayMode === "registration_qr") {
+    return (
+      <main className="fixed inset-0 overflow-hidden bg-void text-text">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(21,184,166,0.12),transparent_45%),radial-gradient(circle_at_bottom,rgba(108,92,231,0.08),transparent_40%)]" />
+        <div className="relative flex h-full w-full items-center justify-center p-6 md:p-10">
+          <section className="grid w-full max-w-[1900px] gap-8 rounded-[2rem] border border-cyan/20 bg-surface/95 p-8 shadow-2xl lg:grid-cols-[0.9fr_1.1fr] lg:p-12">
+            <div className="flex flex-col justify-center">
+              <div className="mb-6 flex flex-wrap items-center gap-3">
+                <span className="inline-flex items-center gap-2 rounded-full border border-cyan/20 bg-cyan/10 px-4 py-2 text-sm font-bold uppercase tracking-[0.2em] text-cyan">
+                  <QrCode size={16} />
+                  Inscriptions
+                </span>
+                {currentRound && (
+                  <span className="rounded-full border border-border bg-elevated px-4 py-2 text-sm font-bold text-text-muted">
+                    {currentRound.name || `Manche ${currentRound.sequence}`}
+                  </span>
+                )}
+              </div>
+
+              <h1 className="font-display text-5xl font-black tracking-tight text-text sm:text-6xl lg:text-8xl">
+                Créez votre équipe
+              </h1>
+              <p className="mt-6 max-w-3xl text-xl leading-relaxed text-text-muted sm:text-2xl lg:text-3xl">
+                Scannez le QR code pour ouvrir le formulaire d'inscription et enregistrer votre équipe avant le début du jeu.
+              </p>
+
+              <div className="mt-8 grid gap-4 sm:grid-cols-2">
+                <div className="rounded-2xl border border-cyan/20 bg-cyan/5 px-5 py-4">
+                  <p className="text-sm font-bold uppercase tracking-[0.18em] text-cyan">Pré-requis</p>
+                  <p className="mt-2 text-lg text-text-muted">Tous les participants créent leur équipe avant toute autre action.</p>
+                </div>
+                <div className="rounded-2xl border border-accent/20 bg-accent/5 px-5 py-4">
+                  <p className="text-sm font-bold uppercase tracking-[0.18em] text-accent-light">Lien direct</p>
+                  <p className="mt-2 code-break-safe font-mono text-base font-bold text-text">
+                    {registerUrl.replace(/^https?:\/\//, "")}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col items-center justify-center rounded-[1.75rem] border border-border bg-elevated/40 p-4 lg:p-8">
+              <div className="h-[45vw] max-h-[784px] w-[45vw] max-w-[784px] rounded-[2rem] border border-border bg-white p-6 shadow-xl">
+                <BriefQrCard url={registerUrl} bare />
+              </div>
+              <div className="mt-6 flex items-center gap-3 rounded-2xl border border-border bg-surface px-5 py-4">
+                <Users className="text-cyan" size={22} />
+                <p className="text-xl font-semibold text-text-muted">Scannez ici pour inscrire votre équipe</p>
+              </div>
+            </div>
+          </section>
+        </div>
+      </main>
+    );
+  }
+
+  if (round.tvDisplayMode === "brief") {
+    return (
+      <main className="fixed inset-0 overflow-hidden bg-void text-text">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(108,92,231,0.10),transparent_38%),radial-gradient(circle_at_bottom_right,rgba(21,184,166,0.08),transparent_34%)]" />
+        <div className="relative flex h-full w-full flex-col p-6 md:p-8">
+          <header className="mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-border pb-5">
+            <div>
+              <div className="mb-3 flex flex-wrap items-center gap-3">
+                <span className="inline-flex items-center gap-2 rounded-full border border-accent/20 bg-accent/10 px-4 py-2 text-sm font-bold uppercase tracking-[0.2em] text-accent-light">
+                  <FileText size={16} />
+                  Brief TV
+                </span>
+                {currentRound && (
+                  <span className="rounded-full border border-border bg-elevated px-4 py-2 text-sm font-bold text-text-muted">
+                    {currentRound.name || `Manche ${currentRound.sequence}`}
+                  </span>
+                )}
+              </div>
+              <h1 className="font-display text-4xl font-black tracking-tight text-text sm:text-5xl lg:text-6xl">
+                Brief de la manche
+              </h1>
+            </div>
+          </header>
+
+          <div className="grid min-h-0 flex-1 gap-6 lg:grid-cols-[0.42fr_0.58fr]">
+            <section className="flex min-h-0 flex-col gap-6 rounded-[2rem] border border-border bg-surface/90 p-6 shadow-xl lg:p-8">
+              <div className="rounded-[1.75rem] border border-cyan/20 bg-cyan/5 p-6 lg:p-8">
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan">Nom du fichier</p>
+                <p className="mt-4 code-break-safe font-mono text-3xl font-black text-text lg:text-5xl">
+                  {subject?.fileName ?? "Aucun fichier défini"}
+                </p>
+              </div>
+
+              <div className="flex-1 rounded-[1.75rem] border border-accent/20 bg-accent/5 p-6 lg:p-8">
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-accent-light">Prototype</p>
+                <code className="mt-4 block code-break-safe font-mono text-2xl font-black leading-tight text-text lg:text-4xl">
+                  {subject ? getFunctionPrototype(subject.functionName, subject.prototype) : "def solution(...):"}
+                </code>
+              </div>
+            </section>
+
+            <section className="flex min-h-0 flex-col overflow-hidden rounded-[2rem] border border-border bg-surface/90 p-6 shadow-xl lg:p-8">
+              <div className="mb-5 flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.2em] text-text-faint">Détails complets</p>
+                  <p className="mt-2 text-xl text-text-muted lg:text-2xl">
+                    Scannez pour ouvrir le brief complet.
+                  </p>
+                </div>
+                <span className="inline-flex items-center gap-2 rounded-full border border-cyan/20 bg-cyan/10 px-4 py-2 text-sm font-bold uppercase tracking-[0.18em] text-cyan">
+                  <QrCode size={16} />
+                  QR
+                </span>
+              </div>
+
+              <div className="flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-[1.75rem] border border-border bg-white p-6 lg:p-8">
+                <div className="aspect-square w-full max-w-[560px]">
+                  <BriefQrCard url={briefUrl} bare />
+                </div>
+              </div>
+            </section>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="fixed inset-0 overflow-hidden bg-void text-text flex flex-col">
@@ -72,7 +195,7 @@ export default function TvPage() {
           <div className="min-w-0">
             <div className="mb-2 flex flex-wrap items-center gap-3">
               <Tv size={20} className="text-accent-light" />
-              <p className="text-sm font-bold uppercase tracking-[0.2em] text-accent-light">Code Relay · TV</p>
+              <p className="text-sm font-bold uppercase tracking-[0.2em] text-accent-light">Code Relay · Classement</p>
               {currentRound && (
                 <span className="ml-2 rounded-full border border-border bg-elevated px-3 py-1 text-xs font-bold text-text-muted">
                   {currentRound.name || `Manche ${currentRound.sequence}`}
@@ -80,7 +203,7 @@ export default function TvPage() {
               )}
             </div>
             <h1 className={`break-safe font-display text-4xl font-bold tracking-tight leading-none sm:text-5xl md:text-6xl lg:text-7xl ${phaseColor}`}>
-              {relayState.phaseLabel}
+              Classement TV
             </h1>
           </div>
           <div className="w-full text-left sm:w-auto sm:text-right">
@@ -98,50 +221,6 @@ export default function TvPage() {
             style={{ width: `${Math.min(100, relayState.progress)}%` }} 
           />
         </div>
-
-        {/* ── SUBJECT BAR ── */}
-        <section className="shrink-0 flex flex-col gap-5 bg-surface border border-border rounded-2xl p-6 shadow-sm lg:flex-row lg:items-center lg:justify-between">
-          <div className="min-w-0 flex-1 lg:pr-8">
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan mb-2">Sujet Actif</p>
-            {subject ? (
-              <div className="min-w-0">
-                <h2 className="break-safe mb-3 font-display text-2xl font-bold tracking-tight text-text sm:text-3xl lg:text-4xl">{subject.title}</h2>
-                <div className="flex flex-col gap-3 text-base sm:text-lg lg:text-xl">
-                  <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-4">
-                    <span className="shrink-0 text-text-muted">Fichier :</span>
-                    <span className="code-break-safe rounded-lg border border-cyan/20 bg-cyan/10 px-3 py-1 font-mono font-bold text-cyan">{subject.fileName}</span>
-                  </div>
-                  <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-4">
-                    <span className="shrink-0 text-text-muted">Fonction :</span>
-                    <span className="code-break-safe rounded-lg border border-cyan/20 bg-cyan/10 px-3 py-1 font-mono font-bold text-cyan">{subject.functionName}</span>
-                  </div>
-                </div>
-                <div className="mt-3 flex min-w-0 flex-col gap-2 text-base sm:text-lg">
-                  <span className="shrink-0 text-text-muted">Prototype :</span>
-                  <code className="code-break-safe rounded-lg border border-cyan/20 bg-cyan/10 px-3 py-1 font-mono font-bold text-cyan">
-                    {getFunctionPrototype(subject.functionName, subject.prototype)}
-                  </code>
-                </div>
-              </div>
-            ) : (
-              <div className="min-w-0">
-                <h2 className="break-safe font-display text-2xl font-bold tracking-tight text-text-faint sm:text-3xl lg:text-4xl">Sujet en attente</h2>
-                <p className="mt-2 text-base text-text-muted sm:text-lg lg:text-xl">L'administrateur n'a pas encore assigné de sujet.</p>
-              </div>
-            )}
-          </div>
-          <div className="flex flex-col gap-4 border-t border-border pt-5 lg:shrink-0 lg:items-center lg:gap-6 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0">
-            <div className="min-w-0 text-left lg:text-right">
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-text-muted mb-2">Brief Public</p>
-              <p className="code-break-safe rounded-lg border border-accent/20 bg-accent/10 px-3 py-1.5 font-mono text-sm font-bold text-accent-light sm:text-base">
-                {briefUrl.replace(/^https?:\/\//, "")}
-              </p>
-            </div>
-            <div className="bg-white p-2 rounded-xl h-24 w-24 shrink-0 shadow-sm border border-border">
-              <BriefQrCard url={briefUrl} compact={true} />
-            </div>
-          </div>
-        </section>
 
         {/* ── MAIN CONTENT: PODIUM & LEADERBOARD ── */}
         <div className="flex-1 flex min-h-0 flex-col gap-6 lg:flex-row">
