@@ -1,0 +1,2 @@
+ALTER TABLE "Round"
+ALTER COLUMN "totalRelaySlices" SET DEFAULT 8;

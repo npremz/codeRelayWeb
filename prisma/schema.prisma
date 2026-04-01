@@ -47,7 +47,7 @@ model Round {
   pausedElapsedMs     Int?
   reflectionMs        Int          @default(300000)
   relaySliceMs        Int          @default(120000)
-  totalRelaySlices    Int          @default(12)
+  totalRelaySlices    Int          @default(8)
   tvDisplayMode       TvDisplayMode @default(LIVE)
   createdAt           DateTime     @default(now())
   updatedAt           DateTime     @updatedAt

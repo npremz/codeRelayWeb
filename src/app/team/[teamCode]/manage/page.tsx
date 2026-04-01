@@ -8,7 +8,7 @@ import { useLiveTeams } from "@/lib/use-live-teams";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
-const DEFAULT_MEMBER_NAMES = ["", "", ""];
+const DEFAULT_MEMBER_NAMES = ["", "", "", ""];
 const RELAY_COLORS = [
   { bg: "bg-hot/10", text: "text-hot", border: "border-hot/20" },
   { bg: "bg-cyan/10", text: "text-cyan", border: "border-cyan/20" },

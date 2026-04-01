@@ -9,7 +9,7 @@ import { useLiveTeams } from "@/lib/use-live-teams";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Key, Users } from "lucide-react";
 
-const DEFAULT_MEMBER_NAMES = ["", "", ""];
+const DEFAULT_MEMBER_NAMES = ["", "", "", ""];
 const MEMBER_PLACEHOLDERS = ["Lina", "Matteo", "Sarah", "Noah"];
 const RELAY_COLORS = [
   { bg: "bg-hot/10", text: "text-hot", border: "border-hot/20" },
