@@ -119,8 +119,8 @@ export default function TvPage() {
       <main className="fixed inset-0 overflow-hidden bg-void text-text">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(108,92,231,0.10),transparent_38%),radial-gradient(circle_at_bottom_right,rgba(21,184,166,0.08),transparent_34%)]" />
         <div className="relative flex h-full w-full flex-col p-6 md:p-8">
-          <header className="mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-border pb-5">
-            <div>
+          <header className="mb-5 flex flex-col gap-5 border-b border-border pb-5 sm:flex-row sm:items-end sm:justify-between">
+            <div className="min-w-0">
               <div className="mb-3 flex flex-wrap items-center gap-3">
                 <span className="inline-flex items-center gap-2 rounded-full border border-accent/20 bg-accent/10 px-4 py-2 text-sm font-bold uppercase tracking-[0.2em] text-accent-light">
                   <FileText size={16} />
@@ -136,20 +136,33 @@ export default function TvPage() {
                 Brief de la manche
               </h1>
             </div>
+            <div className="w-full text-left sm:w-auto sm:text-right">
+              <p className="mb-2 text-sm font-bold uppercase tracking-[0.2em] text-text-faint">Temps restant</p>
+              <div className={`font-display text-6xl font-black tracking-tighter leading-none tabular-nums sm:text-7xl md:text-8xl lg:text-[7rem] ${phaseColor} ${isUrgent ? "animate-pulse text-hot" : ""}`}>
+                {formatClock(relayState.remainingMs)}
+              </div>
+            </div>
           </header>
 
-          <div className="grid min-h-0 flex-1 gap-6 lg:grid-cols-[0.42fr_0.58fr]">
-            <section className="flex min-h-0 flex-col gap-6 rounded-[2rem] border border-border bg-surface/90 p-6 shadow-xl lg:p-8">
-              <div className="rounded-[1.75rem] border border-cyan/20 bg-cyan/5 p-6 lg:p-8">
+          <div className="mb-5 h-3 w-full rounded-full border border-border bg-elevated overflow-hidden">
+            <div
+              className={`h-full transition-all duration-500 ease-linear ${timerBg}`}
+              style={{ width: `${Math.min(100, relayState.progress)}%` }}
+            />
+          </div>
+
+          <div className="grid min-h-0 flex-1 gap-6 lg:grid-cols-[1fr_0.44fr]">
+            <section className="flex min-h-0 flex-col gap-6">
+              <div className="rounded-[2rem] border border-cyan/20 bg-surface/90 p-6 shadow-xl lg:p-8">
                 <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan">Nom du fichier</p>
-                <p className="mt-4 code-break-safe font-mono text-3xl font-black text-text lg:text-5xl">
+                <p className="mt-4 code-break-safe font-mono text-4xl font-black leading-tight text-text lg:text-6xl">
                   {subject?.fileName ?? "Aucun fichier défini"}
                 </p>
               </div>
 
-              <div className="flex-1 rounded-[1.75rem] border border-accent/20 bg-accent/5 p-6 lg:p-8">
+              <div className="flex-1 rounded-[2rem] border border-accent/20 bg-surface/90 p-6 shadow-xl lg:p-8">
                 <p className="text-xs font-bold uppercase tracking-[0.2em] text-accent-light">Prototype</p>
-                <code className="mt-4 block code-break-safe font-mono text-2xl font-black leading-tight text-text lg:text-4xl">
+                <code className="mt-4 block code-break-safe font-mono text-3xl font-black leading-tight text-text lg:text-5xl">
                   {subject ? getFunctionPrototype(subject.functionName, subject.prototype) : "def solution(...):"}
                 </code>
               </div>
@@ -159,7 +172,7 @@ export default function TvPage() {
               <div className="mb-5 flex items-center justify-between gap-4">
                 <div>
                   <p className="text-xs font-bold uppercase tracking-[0.2em] text-text-faint">Détails complets</p>
-                  <p className="mt-2 text-xl text-text-muted lg:text-2xl">
+                  <p className="mt-2 text-lg text-text-muted lg:text-xl">
                     Scannez pour ouvrir le brief complet.
                   </p>
                 </div>
@@ -170,7 +183,7 @@ export default function TvPage() {
               </div>
 
               <div className="flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-[1.75rem] border border-border bg-white p-6 lg:p-8">
-                <div className="aspect-square w-full max-w-[560px]">
+                <div className="aspect-square w-full max-w-[520px]">
                   <BriefQrCard url={briefUrl} bare />
                 </div>
               </div>
