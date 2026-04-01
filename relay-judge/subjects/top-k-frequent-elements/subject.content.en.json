@@ -1,0 +1,33 @@
+{
+  "title": "Top K Frequent Elements",
+  "description": "Return the `k` most frequent values in `nums`. The exact order of the result does not matter as long as the right set of elements is returned.",
+  "parameters": [
+    {
+      "name": "nums",
+      "description": "Array of integers that may contain duplicates and negative values."
+    },
+    {
+      "name": "k",
+      "description": "Number of most frequent elements to return."
+    }
+  ],
+  "returns": {
+    "description": "The `k` most frequent elements, in any order."
+  },
+  "constraints": [
+    "1 <= nums.length <= 10^5",
+    "1 <= k <= number of distinct values in nums",
+    "The order of the returned elements does not matter"
+  ],
+  "examples": [
+    {
+      "title": "Example 1"
+    },
+    {
+      "title": "Example 2"
+    },
+    {
+      "title": "Example 3"
+    }
+  ]
+}

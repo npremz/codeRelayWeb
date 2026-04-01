@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { RelayState } from "@/lib/game-types";
+import { DEFAULT_LOCALE, Locale } from "@/lib/locale";
 
 export type LiveNotification = {
   id: string;
@@ -13,7 +14,7 @@ export type LiveNotification = {
 const DISPLAY_MS = 4500;
 const WARNING_THRESHOLD_MS = 10000;
 
-export function useRoundNotifications(state: RelayState) {
+export function useRoundNotifications(state: RelayState, locale: Locale = DEFAULT_LOCALE) {
   const [notification, setNotification] = useState<LiveNotification | null>(null);
   const previousStateRef = useRef<RelayState | null>(null);
   const timeoutRef = useRef<number | null>(null);
@@ -48,11 +49,15 @@ export function useRoundNotifications(state: RelayState) {
       if (warningKeyRef.current !== warningKey) {
         showNotification({
           tone: "signal",
-          title: "Fin imminente",
+          title: locale === "en" ? "Ending soon" : "Fin imminente",
           message:
             state.phase === "relay"
-              ? "Moins de 10 secondes avant la rotation suivante."
-              : "Moins de 10 secondes avant la fin de la reflexion."
+              ? locale === "en"
+                ? "Less than 10 seconds before the next rotation."
+                : "Moins de 10 secondes avant la rotation suivante."
+              : locale === "en"
+                ? "Less than 10 seconds before the end of strategy time."
+                : "Moins de 10 secondes avant la fin de la réflexion."
         });
         warningKeyRef.current = warningKey;
       }
@@ -69,33 +74,45 @@ export function useRoundNotifications(state: RelayState) {
       if (state.phase === "reflection") {
         showNotification({
           tone: "lime",
-          title: "Reflexion lancee",
-          message: "Les membres peuvent encore discuter pendant 5 minutes."
+          title: locale === "en" ? "Strategy started" : "Réflexion lancée",
+          message: locale === "en"
+            ? "Team members can still discuss for 5 minutes."
+            : "Les membres peuvent encore discuter pendant 5 minutes."
         });
       } else if (state.phase === "relay") {
         showNotification({
           tone: "signal",
-          title: previousState.phase === "paused" ? "Relais repris" : "Relais lance",
-          message: "Un joueur par equipe est au clavier. Silence total."
+          title: previousState.phase === "paused"
+            ? locale === "en" ? "Relay resumed" : "Relais repris"
+            : locale === "en" ? "Relay started" : "Relais lancé",
+          message: locale === "en"
+            ? "One player per team is at the keyboard. Total silence."
+            : "Un joueur par équipe est au clavier. Silence total."
         });
       } else if (state.phase === "paused") {
         showNotification({
           tone: "fog",
-          title: "Pause",
-          message: "Le chronometre est gele jusqu'a reprise par l'organisateur."
+          title: locale === "en" ? "Paused" : "Pause",
+          message: locale === "en"
+            ? "The timer is frozen until the organizer resumes it."
+            : "Le chronomètre est gelé jusqu'à reprise par l'organisateur."
         });
       } else if (state.phase === "complete") {
         showNotification({
           tone: "lime",
-          title: "Manche terminee",
-          message: "Fin du codage. Le jury peut finaliser l'evaluation."
+          title: locale === "en" ? "Round complete" : "Manche terminée",
+          message: locale === "en"
+            ? "Coding is over. The judges can finalize scoring."
+            : "Fin du codage. Le jury peut finaliser l'évaluation."
         });
       }
     } else if (state.phase === "relay" && previousState.currentSlice !== state.currentSlice) {
       showNotification({
         tone: "signal",
-        title: "Rotation",
-        message: "Fin de tranche. Rotation des joueurs au clavier."
+        title: locale === "en" ? "Rotation" : "Rotation",
+        message: locale === "en"
+          ? "Turn over. Rotate players at the keyboard."
+          : "Fin de tranche. Rotation des joueurs au clavier."
       });
     }
 
@@ -104,6 +121,7 @@ export function useRoundNotifications(state: RelayState) {
     state.activeRelayOrder,
     state.currentSlice,
     state.isRunning,
+    locale,
     state.phase,
     state.remainingMs
   ]);

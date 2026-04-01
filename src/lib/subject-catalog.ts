@@ -3,6 +3,7 @@ import "server-only";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { RoundSubject, SubjectExample, SubjectParameter, SubjectReturn } from "@/lib/game-types";
+import { DEFAULT_LOCALE, Locale } from "@/lib/locale";
 
 type SubjectFileShape = {
   id?: unknown;
@@ -12,6 +13,15 @@ type SubjectFileShape = {
   function_name?: unknown;
   prototype?: unknown;
   difficulty?: unknown;
+  parameters?: unknown;
+  returns?: unknown;
+  constraints?: unknown;
+  examples?: unknown;
+};
+
+type SubjectTranslationFileShape = {
+  title?: unknown;
+  description?: unknown;
   parameters?: unknown;
   returns?: unknown;
   constraints?: unknown;
@@ -155,28 +165,121 @@ function parseSubject(data: SubjectFileShape, filePath: string): RoundSubject {
   };
 }
 
-export async function listPublicSubjects(): Promise<RoundSubject[]> {
+async function readSubjectTranslation(subjectDirectory: string, locale: Locale) {
+  if (locale === DEFAULT_LOCALE) {
+    return null;
+  }
+
+  const translationPath = path.join(subjectDirectory, `subject.content.${locale}.json`);
+
+  try {
+    const raw = await readFile(translationPath, "utf8");
+    return JSON.parse(raw) as SubjectTranslationFileShape;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      return null;
+    }
+
+    throw error;
+  }
+}
+
+function applySubjectTranslation(subject: RoundSubject, translation: SubjectTranslationFileShape | null) {
+  if (!translation) {
+    return subject;
+  }
+
+  const translatedParameters = Array.isArray(translation.parameters) ? translation.parameters : [];
+  const translatedReturns = isRecord(translation.returns) ? translation.returns : null;
+  const translatedConstraints = Array.isArray(translation.constraints) ? translation.constraints : [];
+  const translatedExamples = Array.isArray(translation.examples) ? translation.examples : [];
+
+  return {
+    ...subject,
+    title: typeof translation.title === "string" && translation.title.trim() ? translation.title.trim() : subject.title,
+    brief:
+      typeof translation.description === "string" && translation.description.trim()
+        ? translation.description.trim()
+        : subject.brief,
+    parameters: subject.parameters.map((parameter, index) => {
+      const translatedParameter = translatedParameters.find((entry) =>
+        isRecord(entry) && typeof entry.name === "string" && entry.name === parameter.name
+      );
+      const fallbackParameter = translatedParameters[index];
+      const parameterTranslation = isRecord(translatedParameter)
+        ? translatedParameter
+        : isRecord(fallbackParameter)
+          ? fallbackParameter
+          : null;
+
+      return {
+        ...parameter,
+        description:
+          parameterTranslation && typeof parameterTranslation.description === "string" && parameterTranslation.description.trim()
+            ? parameterTranslation.description.trim()
+            : parameter.description
+      };
+    }),
+    returns: subject.returns
+      ? {
+          ...subject.returns,
+          description:
+            translatedReturns && typeof translatedReturns.description === "string" && translatedReturns.description.trim()
+              ? translatedReturns.description.trim()
+              : subject.returns.description
+        }
+      : subject.returns,
+    constraints:
+      translatedConstraints.length > 0
+        ? subject.constraints.map((constraint, index) =>
+            typeof translatedConstraints[index] === "string" && translatedConstraints[index].trim()
+              ? translatedConstraints[index].trim()
+              : constraint
+          )
+        : subject.constraints,
+    examples: subject.examples.map((example, index) => {
+      const exampleTranslation = isRecord(translatedExamples[index]) ? translatedExamples[index] : null;
+
+      return {
+        ...example,
+        title:
+          exampleTranslation && typeof exampleTranslation.title === "string" && exampleTranslation.title.trim()
+            ? exampleTranslation.title.trim()
+            : example.title,
+        explanation:
+          exampleTranslation && typeof exampleTranslation.explanation === "string" && exampleTranslation.explanation.trim()
+            ? exampleTranslation.explanation.trim()
+            : example.explanation
+      };
+    })
+  };
+}
+
+export async function listPublicSubjects(locale: Locale = DEFAULT_LOCALE): Promise<RoundSubject[]> {
   const entries = await readdir(SUBJECTS_DIR, { withFileTypes: true });
   const subjects = await Promise.all(
     entries
       .filter((entry) => entry.isDirectory())
       .map(async (entry) => {
-        const subjectPath = path.join(SUBJECTS_DIR, entry.name, "subject.json");
+        const subjectDirectory = path.join(SUBJECTS_DIR, entry.name);
+        const subjectPath = path.join(subjectDirectory, "subject.json");
         const raw = await readFile(subjectPath, "utf8");
-        return parseSubject(JSON.parse(raw) as SubjectFileShape, subjectPath);
+        const subject = parseSubject(JSON.parse(raw) as SubjectFileShape, subjectPath);
+        const translation = await readSubjectTranslation(subjectDirectory, locale);
+        return applySubjectTranslation(subject, translation);
       })
   );
 
-  return subjects.sort((left, right) => left.title.localeCompare(right.title, "fr"));
+  return subjects.sort((left, right) => left.title.localeCompare(right.title, locale));
 }
 
-export async function getPublicSubjectById(subjectId: string): Promise<RoundSubject | null> {
+export async function getPublicSubjectById(subjectId: string, locale: Locale = DEFAULT_LOCALE): Promise<RoundSubject | null> {
   const normalizedId = subjectId.trim();
 
   if (!normalizedId) {
     return null;
   }
 
-  const subjects = await listPublicSubjects();
+  const subjects = await listPublicSubjects(locale);
   return subjects.find((subject) => subject.id === normalizedId) ?? null;
 }

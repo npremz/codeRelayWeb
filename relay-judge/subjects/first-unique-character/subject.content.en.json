@@ -1,0 +1,32 @@
+{
+  "title": "First Unique Character in a String",
+  "description": "Return the index of the first character in `s` that appears exactly once. If no character is unique, return `-1`. The index is zero-based.",
+  "parameters": [
+    {
+      "name": "s",
+      "description": "String in which you need to find the first non-repeated character."
+    }
+  ],
+  "returns": {
+    "description": "The index of the first unique character, or `-1` if none exists."
+  },
+  "constraints": [
+    "1 <= s.length <= 10^5",
+    "`s` contains only simple characters",
+    "The returned index is zero-based"
+  ],
+  "examples": [
+    {
+      "title": "Example 1",
+      "explanation": "`l` is the first character that appears exactly once."
+    },
+    {
+      "title": "Example 2",
+      "explanation": "`v` is the first unique character."
+    },
+    {
+      "title": "Example 3",
+      "explanation": "Every character appears at least twice."
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "title": "Merge Intervals",
+  "description": "Merge every interval in `intervals` that overlaps or touches another one, then return a final sorted and normalized list.",
+  "parameters": [
+    {
+      "name": "intervals",
+      "description": "List of `[start, end]` intervals to merge."
+    }
+  ],
+  "returns": {
+    "description": "The sorted list of merged intervals with no overlap."
+  },
+  "constraints": [
+    "1 <= intervals.length <= 10^4",
+    "intervals[i].length == 2",
+    "0 <= start <= end <= 10^4"
+  ],
+  "examples": [
+    {
+      "title": "Example 1"
+    },
+    {
+      "title": "Example 2",
+      "explanation": "Two intervals that touch must still be merged."
+    },
+    {
+      "title": "Example 3"
+    }
+  ]
+}

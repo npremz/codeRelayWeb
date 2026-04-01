@@ -1,11 +1,13 @@
 "use client";
 
 import { BriefQrCard } from "@/components/brief-qr-card";
+import { useLocale } from "@/components/locale-provider";
 import { LiveNotificationBanner } from "@/components/live-notification-banner";
 import { buildLiveTeams, formatClock, getRelayState, getStatusLabel } from "@/lib/demo-game";
 import { getPublicBriefUrl, getPublicRegisterUrl } from "@/lib/public-brief";
 import { useRoundNotifications } from "@/lib/use-round-notifications";
 import { useLiveTeams } from "@/lib/use-live-teams";
+import { formatCopy } from "@/lib/locale";
 import { useEffect, useState } from "react";
 import { Trophy, Tv, Users, QrCode, FileText } from "lucide-react";
 
@@ -39,6 +41,7 @@ function getTimerBg(phase: string) {
 }
 
 export default function TvPage() {
+  const { locale, messages } = useLocale();
   const [now, setNow] = useState(0);
   const { teams: storedTeams, round, currentRound } = useLiveTeams();
 
@@ -48,16 +51,16 @@ export default function TvPage() {
     return () => window.clearInterval(interval);
   }, []);
 
-  const relayState = getRelayState(round, now);
-  const notification = useRoundNotifications(relayState);
-  const teams = buildLiveTeams(storedTeams, relayState);
+  const relayState = getRelayState(round, now, locale);
+  const notification = useRoundNotifications(relayState, locale);
+  const teams = buildLiveTeams(storedTeams, relayState, locale);
   const leader = teams[0];
   const isUrgent = relayState.isRunning && relayState.remainingMs > 0 && relayState.remainingMs <= 30000;
   const phaseColor = getPhaseColor(relayState.phase);
   const timerBg = getTimerBg(relayState.phase);
   const subject = currentRound?.subject ?? null;
-  const briefUrl = getPublicBriefUrl();
-  const registerUrl = getPublicRegisterUrl();
+  const briefUrl = getPublicBriefUrl(locale);
+  const registerUrl = getPublicRegisterUrl(locale);
 
   if (round.tvDisplayMode === "registration_qr") {
     return (
@@ -69,29 +72,29 @@ export default function TvPage() {
               <div className="mb-6 flex flex-wrap items-center gap-3">
                 <span className="inline-flex items-center gap-2 rounded-full border border-cyan/20 bg-cyan/10 px-4 py-2 text-sm font-bold uppercase tracking-[0.2em] text-cyan">
                   <QrCode size={16} />
-                  Inscriptions
+                  {messages.tv.registrationTag}
                 </span>
                 {currentRound && (
                   <span className="rounded-full border border-border bg-elevated px-4 py-2 text-sm font-bold text-text-muted">
-                    {currentRound.name || `Manche ${currentRound.sequence}`}
+                    {currentRound.name || (locale === "en" ? `Round ${currentRound.sequence}` : `Manche ${currentRound.sequence}`)}
                   </span>
                 )}
               </div>
 
               <h1 className="font-display text-5xl font-black tracking-tight text-text sm:text-6xl lg:text-8xl">
-                Créez votre équipe
+                {messages.tv.createTeam}
               </h1>
               <p className="mt-6 max-w-3xl text-xl leading-relaxed text-text-muted sm:text-2xl lg:text-3xl">
-                Scannez le QR code pour ouvrir le formulaire d'inscription et enregistrer votre équipe avant le début du jeu.
+                {messages.tv.registrationDescription}
               </p>
 
               <div className="mt-8 grid gap-4 sm:grid-cols-2">
                 <div className="rounded-2xl border border-cyan/20 bg-cyan/5 px-5 py-4">
-                  <p className="text-sm font-bold uppercase tracking-[0.18em] text-cyan">Pré-requis</p>
-                  <p className="mt-2 text-lg text-text-muted">Tous les participants créent leur équipe avant toute autre action.</p>
+                  <p className="text-sm font-bold uppercase tracking-[0.18em] text-cyan">{messages.tv.prerequisites}</p>
+                  <p className="mt-2 text-lg text-text-muted">{messages.tv.prerequisitesDescription}</p>
                 </div>
                 <div className="rounded-2xl border border-accent/20 bg-accent/5 px-5 py-4">
-                  <p className="text-sm font-bold uppercase tracking-[0.18em] text-accent-light">Lien direct</p>
+                  <p className="text-sm font-bold uppercase tracking-[0.18em] text-accent-light">{messages.tv.directLink}</p>
                   <p className="mt-2 code-break-safe font-mono text-base font-bold text-text">
                     {registerUrl.replace(/^https?:\/\//, "")}
                   </p>
@@ -105,7 +108,7 @@ export default function TvPage() {
               </div>
               <div className="mt-6 flex items-center gap-3 rounded-2xl border border-border bg-surface px-5 py-4">
                 <Users className="text-cyan" size={22} />
-                <p className="text-xl font-semibold text-text-muted">Scannez ici pour inscrire votre équipe</p>
+                <p className="text-xl font-semibold text-text-muted">{messages.tv.scanToRegister}</p>
               </div>
             </div>
           </section>
@@ -124,20 +127,20 @@ export default function TvPage() {
               <div className="mb-3 flex flex-wrap items-center gap-3">
                 <span className="inline-flex items-center gap-2 rounded-full border border-accent/20 bg-accent/10 px-4 py-2 text-sm font-bold uppercase tracking-[0.2em] text-accent-light">
                   <FileText size={16} />
-                  Brief TV
+                  {messages.tv.briefTag}
                 </span>
                 {currentRound && (
                   <span className="rounded-full border border-border bg-elevated px-4 py-2 text-sm font-bold text-text-muted">
-                    {currentRound.name || `Manche ${currentRound.sequence}`}
+                    {currentRound.name || (locale === "en" ? `Round ${currentRound.sequence}` : `Manche ${currentRound.sequence}`)}
                   </span>
                 )}
               </div>
               <h1 className="font-display text-4xl font-black tracking-tight text-text sm:text-5xl lg:text-6xl">
-                Brief de la manche
+                {messages.tv.roundBrief}
               </h1>
             </div>
             <div className="w-full text-left sm:w-auto sm:text-right">
-              <p className="mb-2 text-sm font-bold uppercase tracking-[0.2em] text-text-faint">Temps restant</p>
+              <p className="mb-2 text-sm font-bold uppercase tracking-[0.2em] text-text-faint">{messages.tv.timeRemaining}</p>
               <div className={`font-display text-6xl font-black tracking-tighter leading-none tabular-nums sm:text-7xl md:text-8xl lg:text-[7rem] ${phaseColor} ${isUrgent ? "animate-pulse text-hot" : ""}`}>
                 {formatClock(relayState.remainingMs)}
               </div>
@@ -154,9 +157,9 @@ export default function TvPage() {
           <div className="grid min-h-0 flex-1 gap-6 lg:grid-cols-[1fr_0.44fr]">
             <section className="flex min-h-0 flex-col gap-6">
               <div className="rounded-[2rem] border border-cyan/20 bg-surface/90 p-6 shadow-xl lg:p-8">
-                <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan">Nom du fichier</p>
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan">{messages.tv.fileName}</p>
                 <p className="mt-4 code-break-safe font-mono text-4xl font-black leading-tight text-text lg:text-6xl">
-                  {subject?.fileName ?? "Aucun fichier défini"}
+                  {subject?.fileName ?? messages.tv.noFile}
                 </p>
               </div>
 
@@ -171,9 +174,9 @@ export default function TvPage() {
             <section className="flex min-h-0 flex-col overflow-hidden rounded-[2rem] border border-border bg-surface/90 p-6 shadow-xl lg:p-8">
               <div className="mb-5 flex items-center justify-between gap-4">
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.2em] text-text-faint">Détails complets</p>
+                  <p className="text-xs font-bold uppercase tracking-[0.2em] text-text-faint">{messages.tv.fullDetails}</p>
                   <p className="mt-2 text-lg text-text-muted lg:text-xl">
-                    Scannez pour ouvrir le brief complet.
+                    {messages.tv.scanToOpenBrief}
                   </p>
                 </div>
                 <span className="inline-flex items-center gap-2 rounded-full border border-cyan/20 bg-cyan/10 px-4 py-2 text-sm font-bold uppercase tracking-[0.18em] text-cyan">
@@ -208,19 +211,19 @@ export default function TvPage() {
           <div className="min-w-0">
             <div className="mb-2 flex flex-wrap items-center gap-3">
               <Tv size={20} className="text-accent-light" />
-              <p className="text-sm font-bold uppercase tracking-[0.2em] text-accent-light">Code Relay · Classement</p>
+              <p className="text-sm font-bold uppercase tracking-[0.2em] text-accent-light">{messages.tv.leaderboardTag}</p>
               {currentRound && (
                 <span className="ml-2 rounded-full border border-border bg-elevated px-3 py-1 text-xs font-bold text-text-muted">
-                  {currentRound.name || `Manche ${currentRound.sequence}`}
+                  {currentRound.name || (locale === "en" ? `Round ${currentRound.sequence}` : `Manche ${currentRound.sequence}`)}
                 </span>
               )}
             </div>
             <h1 className={`break-safe font-display text-4xl font-bold tracking-tight leading-none sm:text-5xl md:text-6xl lg:text-7xl ${phaseColor}`}>
-              Classement TV
+              {messages.tv.leaderboardTitle}
             </h1>
           </div>
           <div className="w-full text-left sm:w-auto sm:text-right">
-            <p className="text-sm font-bold uppercase tracking-[0.2em] text-text-faint mb-2">Temps restant</p>
+            <p className="text-sm font-bold uppercase tracking-[0.2em] text-text-faint mb-2">{messages.tv.timeRemaining}</p>
             <div className={`font-display text-6xl font-black tracking-tighter leading-none tabular-nums sm:text-7xl md:text-8xl lg:text-[7rem] ${phaseColor} ${isUrgent ? "animate-pulse text-hot" : ""}`}>
               {formatClock(relayState.remainingMs)}
             </div>
@@ -245,7 +248,7 @@ export default function TvPage() {
               <div className="absolute top-5 left-5 bg-warn text-void font-black text-2xl w-12 h-12 flex items-center justify-center rounded-xl shadow-sm">1</div>
               {leader ? (
                 <>
-                  <p className="text-xs font-bold uppercase tracking-[0.3em] text-accent mb-2">Leader Actuel</p>
+                  <p className="text-xs font-bold uppercase tracking-[0.3em] text-accent mb-2">{messages.tv.currentLeader}</p>
                   <h3 className="font-display text-5xl md:text-6xl font-black text-text w-full truncate px-8 mb-4">{leader.name}</h3>
                   <div className="flex items-center justify-center gap-3 text-xl text-text-muted font-medium mb-8">
                     <span className="bg-surface px-3 py-1 rounded border border-border">{leader.station}</span>
@@ -254,10 +257,13 @@ export default function TvPage() {
                   </div>
                   <div className="mt-auto">
                     <p className="font-display text-[7rem] font-black text-accent leading-none tabular-nums drop-shadow-sm">{leader.totalScore}</p>
-                    <p className="text-lg font-bold text-accent/50 mt-1">points cumulés</p>
+                    <p className="text-lg font-bold text-accent/50 mt-1">{messages.tv.totalPoints}</p>
                     {leader.carryOverScore > 0 && (
                       <p className="mt-2 text-sm font-semibold text-text-muted">
-                        {leader.carryOverScore} reportés + {leader.roundScore} sur cette manche
+                        {formatCopy(messages.tv.carryOver, {
+                          carry: leader.carryOverScore,
+                          round: leader.roundScore
+                        })}
                       </p>
                     )}
                   </div>
@@ -265,7 +271,7 @@ export default function TvPage() {
               ) : (
                 <div className="flex flex-col items-center justify-center h-full">
                   <Trophy size={48} className="text-accent/20 mb-4" />
-                  <p className="text-3xl font-bold text-text-faint">En attente</p>
+                  <p className="text-3xl font-bold text-text-faint">{messages.tv.waiting}</p>
                 </div>
               )}
             </div>
@@ -308,9 +314,9 @@ export default function TvPage() {
           {/* Right: Leaderboard List (Scrollable) */}
           <div className="flex min-h-0 w-full flex-col rounded-2xl border border-border bg-surface shadow-sm lg:w-[60%]">
             <div className="shrink-0 flex flex-col gap-3 border-b border-border bg-elevated/50 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
-              <h3 className="break-safe font-display text-xl font-bold uppercase tracking-widest text-text">Classement Live</h3>
+              <h3 className="break-safe font-display text-xl font-bold uppercase tracking-widest text-text">{messages.tv.liveLeaderboard}</h3>
               <span className="w-fit px-3 py-1 bg-surface border border-border rounded-full text-sm font-bold text-text-muted">
-                {teams.length} équipes
+                {formatCopy(messages.tv.teamsCount, { count: teams.length })}
               </span>
             </div>
             
@@ -318,7 +324,7 @@ export default function TvPage() {
               {teams.length === 0 && (
                 <div className="m-auto text-center">
                   <Tv size={64} className="mx-auto text-border mb-4" />
-                  <p className="text-xl font-medium text-text-muted">En attente de la première équipe</p>
+                  <p className="text-xl font-medium text-text-muted">{messages.tv.waitingFirstTeam}</p>
                 </div>
               )}
               
@@ -340,7 +346,7 @@ export default function TvPage() {
                           <div className={`h-full ${timerBg} transition-all duration-500`} style={{width: `${team.progress}%`}} />
                         </div>
                         <span className="w-24 shrink-0 text-right text-xs font-bold uppercase tracking-wider text-text-muted">
-                          {getStatusLabel(team.status)}
+                          {getStatusLabel(team.status, locale)}
                         </span>
                       </div>
                     </div>

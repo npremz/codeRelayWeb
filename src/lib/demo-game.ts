@@ -7,6 +7,7 @@ import {
   ScoreMetricKey,
   TeamSeed
 } from "@/lib/game-types";
+import { DEFAULT_LOCALE, Locale } from "@/lib/locale";
 
 type RankComparableTeam = Pick<LiveTeam, "totalScore" | "scoreCard" | "submissionOrder">;
 
@@ -114,6 +115,45 @@ export const demoTeams: TeamSeed[] = [
   }
 ];
 
+function getTieBreakNote(locale: Locale, reason: "correction" | "edgeCases" | "complexity" | "submissionOrder") {
+  switch (reason) {
+    case "correction":
+      return locale === "en" ? "Tie-break on correctness" : "Départage sur correction";
+    case "edgeCases":
+      return locale === "en" ? "Tie-break on edge cases" : "Départage sur edge cases";
+    case "complexity":
+      return locale === "en" ? "Tie-break on complexity" : "Départage sur complexité";
+    case "submissionOrder":
+      return locale === "en" ? "Tie-break on submission order" : "Départage sur ordre de soumission";
+    default:
+      return reason;
+  }
+}
+
+function getDraftPhaseLabel(locale: Locale, registrationOpen: boolean) {
+  if (registrationOpen) {
+    return locale === "en" ? "Registration open" : "Inscriptions ouvertes";
+  }
+
+  return locale === "en" ? "Registration closed" : "Inscriptions fermées";
+}
+
+function getReflectionPhaseLabel(locale: Locale, paused: boolean) {
+  if (paused) {
+    return locale === "en" ? "Paused during strategy time" : "Pause pendant réflexion";
+  }
+
+  return locale === "en" ? "Strategy phase" : "Phase de réflexion";
+}
+
+function getRelayPhaseLabel(locale: Locale, paused: boolean) {
+  if (paused) {
+    return locale === "en" ? "Paused during relay" : "Pause pendant relais";
+  }
+
+  return locale === "en" ? "Relay coding" : "Codage relais";
+}
+
 function getActiveRelayOrderForTeam(memberCount: number, currentSlice: number) {
   if (memberCount <= 0) {
     return null;
@@ -156,7 +196,7 @@ export function canAdminMarkSubmission(round: RoundControlState): boolean {
   );
 }
 
-export function getRelayState(round: RoundControlState, now = Date.now()): RelayState {
+export function getRelayState(round: RoundControlState, now = Date.now(), locale: Locale = DEFAULT_LOCALE): RelayState {
   const reflectionMs = round.reflectionMs;
   const relayTotalMs = round.relaySliceMs * round.totalRelaySlices;
 
@@ -168,7 +208,7 @@ export function getRelayState(round: RoundControlState, now = Date.now()): Relay
       totalMs: reflectionMs,
       currentSlice: 0,
       activeRelayOrder: null,
-      phaseLabel: round.registrationOpen ? "Inscriptions ouvertes" : "Inscriptions fermees",
+      phaseLabel: getDraftPhaseLabel(locale, round.registrationOpen),
       progress: 0,
       isRunning: false
     };
@@ -182,7 +222,7 @@ export function getRelayState(round: RoundControlState, now = Date.now()): Relay
       totalMs: relayTotalMs,
       currentSlice: Math.max(round.totalRelaySlices - 1, 0),
       activeRelayOrder: null,
-      phaseLabel: "Manche terminee",
+      phaseLabel: locale === "en" ? "Round complete" : "Manche terminée",
       progress: 100,
       isRunning: false
     };
@@ -203,7 +243,7 @@ export function getRelayState(round: RoundControlState, now = Date.now()): Relay
       totalMs: reflectionMs,
       currentSlice: 0,
       activeRelayOrder: null,
-      phaseLabel: round.phase === "paused" ? "Pause pendant reflexion" : "Phase de reflexion",
+      phaseLabel: getReflectionPhaseLabel(locale, round.phase === "paused"),
       progress: reflectionMs === 0 ? 0 : Math.round((boundedElapsedMs / reflectionMs) * 100),
       isRunning: round.phase !== "paused"
     };
@@ -223,7 +263,7 @@ export function getRelayState(round: RoundControlState, now = Date.now()): Relay
     totalMs: relayTotalMs,
     currentSlice,
     activeRelayOrder: currentSlice + 1,
-    phaseLabel: round.phase === "paused" ? "Pause pendant relais" : "Codage relais",
+    phaseLabel: getRelayPhaseLabel(locale, round.phase === "paused"),
     progress: relayTotalMs === 0 ? 0 : Math.round((boundedElapsedMs / relayTotalMs) * 100),
     isRunning: round.phase !== "paused"
   };
@@ -278,7 +318,7 @@ function compareTeams(a: RankComparableTeam, b: RankComparableTeam): number {
   return aOrder - bOrder;
 }
 
-export function buildLiveTeams(seeds: TeamSeed[], state: RelayState): LiveTeam[] {
+export function buildLiveTeams(seeds: TeamSeed[], state: RelayState, locale: Locale = DEFAULT_LOCALE): LiveTeam[] {
   type UnrankedLiveTeam = Omit<LiveTeam, "rank">;
 
   const submittedTeamIds = seeds
@@ -360,13 +400,13 @@ export function buildLiveTeams(seeds: TeamSeed[], state: RelayState): LiveTeam[]
 
     if (previousTeam && previousTeam.totalScore === team.totalScore) {
       if (previousTeam.scoreCard.correction !== team.scoreCard.correction) {
-        tieBreakNote = "Departage sur correction";
+        tieBreakNote = getTieBreakNote(locale, "correction");
       } else if (previousTeam.scoreCard.edgeCases !== team.scoreCard.edgeCases) {
-        tieBreakNote = "Departage sur edge cases";
+        tieBreakNote = getTieBreakNote(locale, "edgeCases");
       } else if (previousTeam.scoreCard.complexity !== team.scoreCard.complexity) {
-        tieBreakNote = "Departage sur complexite";
+        tieBreakNote = getTieBreakNote(locale, "complexity");
       } else if (previousTeam.submissionOrder !== team.submissionOrder) {
-        tieBreakNote = "Departage sur ordre de soumission";
+        tieBreakNote = getTieBreakNote(locale, "submissionOrder");
       }
     }
 
@@ -389,35 +429,35 @@ export function formatClock(ms: number): string {
   return `${minutes}:${seconds}`;
 }
 
-export function getStatusLabel(status: LiveTeam["status"]): string {
+export function getStatusLabel(status: LiveTeam["status"], locale: Locale = DEFAULT_LOCALE): string {
   switch (status) {
     case "registered":
-      return "Inscrite";
+      return locale === "en" ? "Registered" : "Inscrite";
     case "ready":
-      return "Prete";
+      return locale === "en" ? "Ready" : "Prête";
     case "coding":
-      return "En codage";
+      return locale === "en" ? "Coding" : "En codage";
     case "submitted":
-      return "Soumise";
+      return locale === "en" ? "Submitted" : "Soumise";
     case "scored":
-      return "Corrigee";
+      return locale === "en" ? "Scored" : "Corrigée";
     default:
       return status;
   }
 }
 
-export function getRoundActionLabel(phase: RoundControlState["phase"]): string {
+export function getRoundActionLabel(phase: RoundControlState["phase"], locale: Locale = DEFAULT_LOCALE): string {
   switch (phase) {
     case "draft":
-      return "Attente";
+      return locale === "en" ? "Waiting" : "Attente";
     case "reflection":
-      return "Reflexion";
+      return locale === "en" ? "Strategy" : "Réflexion";
     case "relay":
-      return "Relais";
+      return locale === "en" ? "Relay" : "Relais";
     case "paused":
-      return "Pause";
+      return locale === "en" ? "Paused" : "Pause";
     case "complete":
-      return "Terminee";
+      return locale === "en" ? "Complete" : "Terminée";
     default:
       return phase;
   }
@@ -430,7 +470,7 @@ export function formatTieBreakTuple(team: Pick<LiveTeam, "scoreCard" | "submissi
 }
 
 export function getTieBreakReason(team: Pick<LiveTeam, "tieBreakNote">): string {
-  return team.tieBreakNote ?? "Aucun departage necessaire";
+  return team.tieBreakNote ?? "Aucun départage nécessaire";
 }
 
 export function getTieBreakScenarios(teams: LiveTeam[]) {

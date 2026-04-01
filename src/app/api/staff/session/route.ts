@@ -6,6 +6,8 @@ import {
   resolveRoleFromAccessCode,
   verifyAccessCode
 } from "@/lib/staff-auth";
+import { translatePublicErrorMessage } from "@/lib/locale";
+import { getLocaleFromRequest } from "@/lib/request-locale";
 
 export const dynamic = "force-dynamic";
 
@@ -16,12 +18,13 @@ type SessionBody = {
 };
 
 export async function POST(request: NextRequest) {
+  const locale = getLocaleFromRequest(request);
   const body = (await request.json()) as SessionBody;
   const requestedRole = body.role;
   const code = body.code ?? "";
 
   if (requestedRole !== "admin" && requestedRole !== "judge") {
-    return NextResponse.json({ error: "Role invalide." }, { status: 400 });
+    return NextResponse.json({ error: translatePublicErrorMessage("Role invalide.", locale) }, { status: 400 });
   }
 
   const resolvedRole =
@@ -30,7 +33,7 @@ export async function POST(request: NextRequest) {
       : resolveRoleFromAccessCode(code);
 
   if (!resolvedRole) {
-    return NextResponse.json({ error: "Code d'acces invalide." }, { status: 401 });
+    return NextResponse.json({ error: translatePublicErrorMessage("Code d'acces invalide.", locale) }, { status: 401 });
   }
 
   await createStaffSessionCookie(resolvedRole);

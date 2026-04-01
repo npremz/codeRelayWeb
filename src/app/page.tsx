@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { AppFrame } from "@/components/app-frame";
+import { useLocale } from "@/components/locale-provider";
 import { LiveNotificationBanner } from "@/components/live-notification-banner";
 import { PhaseTimer } from "@/components/phase-timer";
 import { RankingTable } from "@/components/ranking-table";
@@ -12,30 +13,30 @@ import { useEffect, useState } from "react";
 
 import { UserPlus, BarChart3, BookOpen, Trophy, FileText } from "lucide-react";
 
-const screens = [
-  {
-    href: "/register",
-    label: "Inscription",
-    desc: "Créer une équipe en quelques secondes",
-    icon: <UserPlus size={20} />
-  },
-  {
-    href: "/brief",
-    label: "Brief",
-    desc: "Consulter l'énoncé public et le fichier attendu",
-    icon: <FileText size={20} />
-  },
-  {
-    href: "/results",
-    label: "Résultats",
-    desc: "Classement public avec tie-break",
-    icon: <BarChart3 size={20} />
-  }
-];
-
 export default function HomePage() {
+  const { locale, messages } = useLocale();
   const [now, setNow] = useState(0);
   const { teams: storedTeams, round, currentRound } = useLiveTeams();
+  const screens = [
+    {
+      href: "/register",
+      label: messages.home.screens.register.label,
+      desc: messages.home.screens.register.description,
+      icon: <UserPlus size={20} />
+    },
+    {
+      href: "/brief",
+      label: messages.home.screens.brief.label,
+      desc: messages.home.screens.brief.description,
+      icon: <FileText size={20} />
+    },
+    {
+      href: "/results",
+      label: messages.home.screens.results.label,
+      desc: messages.home.screens.results.description,
+      icon: <BarChart3 size={20} />
+    }
+  ];
 
   useEffect(() => {
     setNow(Date.now());
@@ -43,14 +44,14 @@ export default function HomePage() {
     return () => window.clearInterval(interval);
   }, []);
 
-  const relayState = getRelayState(round, now);
-  const notification = useRoundNotifications(relayState);
-  const teams = buildLiveTeams(storedTeams, relayState);
+  const relayState = getRelayState(round, now, locale);
+  const notification = useRoundNotifications(relayState, locale);
+  const teams = buildLiveTeams(storedTeams, relayState, locale);
 
   return (
     <AppFrame
-      title="Code Relay"
-      subtitle="Tournoi de programmation en relais"
+      title={messages.home.title}
+      subtitle={messages.home.subtitle}
       currentRound={currentRound}
     >
       <LiveNotificationBanner notification={notification} />
@@ -60,7 +61,7 @@ export default function HomePage() {
         <div className="space-y-6">
           {/* Quick access */}
           <div className="rounded-2xl border border-border bg-surface p-6">
-            <h3 className="mb-4 font-display text-lg font-bold tracking-tight">Accès rapide</h3>
+            <h3 className="mb-4 font-display text-lg font-bold tracking-tight">{messages.home.quickAccess}</h3>
             <div className="grid gap-3">
               {screens.map((item) => (
                 <Link
@@ -94,26 +95,26 @@ export default function HomePage() {
             <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
               <div>
                 <h2 className="font-display text-3xl font-bold tracking-tight md:text-4xl">
-                  Code Relay
+                  {messages.home.title}
                 </h2>
                 <p className="mt-2 text-base text-text-muted">
-                  2 à 4 joueurs · 5 min de réflexion · Relais de 2 min · Silence total au clavier
+                  {messages.home.heroSummary}
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-4">
                 <div className="rounded-xl border border-border bg-surface px-4 md:px-5 py-3 text-center flex-1 sm:flex-none">
                   <p className="font-display text-2xl md:text-3xl font-bold text-text">{storedTeams.length}</p>
-                  <p className="text-[10px] md:text-xs uppercase tracking-wider text-text-faint">Équipes</p>
+                  <p className="text-[10px] md:text-xs uppercase tracking-wider text-text-faint">{messages.home.stats.teams}</p>
                 </div>
                 <div className="rounded-xl border border-border bg-surface px-4 md:px-5 py-3 text-center flex-1 sm:flex-none">
                   <p className="font-display text-2xl md:text-3xl font-bold text-text">{storedTeams.length * 3}</p>
-                  <p className="text-[10px] md:text-xs uppercase tracking-wider text-text-faint">Joueurs</p>
+                  <p className="text-[10px] md:text-xs uppercase tracking-wider text-text-faint">{messages.home.stats.players}</p>
                 </div>
                 <div className="rounded-xl border border-border bg-surface px-4 md:px-5 py-3 text-center flex-1 sm:flex-none">
                   <p className={`font-display text-2xl md:text-3xl font-bold ${round.registrationOpen ? "text-success" : "text-hot"}`}>
                     {round.registrationOpen ? "ON" : "OFF"}
                   </p>
-                  <p className="text-[10px] md:text-xs uppercase tracking-wider text-text-faint">Inscrip.</p>
+                  <p className="text-[10px] md:text-xs uppercase tracking-wider text-text-faint">{messages.home.stats.registration}</p>
                 </div>
               </div>
             </div>
@@ -129,24 +130,14 @@ export default function HomePage() {
               <div className="flex items-start gap-4">
                 <span className="text-success mt-1"><BookOpen size={24} /></span>
                 <div>
-                  <h3 className="font-display text-lg font-bold tracking-tight">Règles du jeu</h3>
+                  <h3 className="font-display text-lg font-bold tracking-tight">{messages.home.rulesTitle}</h3>
                   <ul className="mt-3 space-y-2.5 text-sm text-text-muted">
-                    <li className="flex items-start gap-2">
-                      <span className="mt-0.5 text-cyan">→</span>
-                      5 min de réflexion collective avant le 1er passage
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="mt-0.5 text-cyan">→</span>
-                      Relais de 2 min par joueur, ordre fixe selon la composition de l&apos;équipe
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="mt-0.5 text-cyan">→</span>
-                      Aucune communication pendant le tour au clavier
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="mt-0.5 text-cyan">→</span>
-                      Notes papier autorisées, rien d'autre
-                    </li>
+                    {messages.home.rules.map((rule) => (
+                      <li key={rule} className="flex items-start gap-2">
+                        <span className="mt-0.5 text-cyan">→</span>
+                        {rule}
+                      </li>
+                    ))}
                   </ul>
                 </div>
               </div>
@@ -157,23 +148,23 @@ export default function HomePage() {
               <div className="flex items-start gap-4">
                 <span className="text-warn mt-1"><Trophy size={24} /></span>
                 <div>
-                  <h3 className="font-display text-lg font-bold tracking-tight">Barème / 100</h3>
+                  <h3 className="font-display text-lg font-bold tracking-tight">{messages.home.scoringTitle}</h3>
                   <div className="mt-3 grid grid-cols-2 gap-2.5">
                     <div className="rounded-lg bg-elevated px-3 py-2.5 text-center">
                       <p className="font-display text-2xl font-bold text-warn">40</p>
-                      <p className="text-xs text-text-faint">Correction</p>
+                      <p className="text-xs text-text-faint">{messages.home.scoring.correction}</p>
                     </div>
                     <div className="rounded-lg bg-elevated px-3 py-2.5 text-center">
                       <p className="font-display text-2xl font-bold text-cyan">20</p>
-                      <p className="text-xs text-text-faint">Edge cases</p>
+                      <p className="text-xs text-text-faint">{messages.home.scoring.edgeCases}</p>
                     </div>
                     <div className="rounded-lg bg-elevated px-3 py-2.5 text-center">
                       <p className="font-display text-2xl font-bold text-accent-light">20</p>
-                      <p className="text-xs text-text-faint">Complexité</p>
+                      <p className="text-xs text-text-faint">{messages.home.scoring.complexity}</p>
                     </div>
                     <div className="rounded-lg bg-elevated px-3 py-2.5 text-center">
                       <p className="font-display text-2xl font-bold text-success">10+10</p>
-                      <p className="text-xs text-text-faint">Lisib. + Rapidité</p>
+                      <p className="text-xs text-text-faint">{messages.home.scoring.readabilityAndSpeed}</p>
                     </div>
                   </div>
                 </div>

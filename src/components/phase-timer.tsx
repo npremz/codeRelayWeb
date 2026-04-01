@@ -1,3 +1,6 @@
+"use client";
+
+import { useLocale } from "@/components/locale-provider";
 import { formatClock } from "@/lib/demo-game";
 import { Panel } from "@/components/panel";
 import { RelayState } from "@/lib/game-types";
@@ -8,14 +11,14 @@ type PhaseTimerProps = {
   large?: boolean;
 };
 
-function getPhaseConfig(state: RelayState) {
+function getPhaseConfig(state: RelayState, locale: "fr" | "en") {
   switch (state.phase) {
     case "reflection":
       return {
         accent: "cyan" as const,
         icon: <MessageCircle size={24} className="text-cyan" />,
-        statusLabel: "Réflexion en cours",
-        hint: "Les membres discutent et préparent leur stratégie",
+        statusLabel: locale === "en" ? "Strategy in progress" : "Réflexion en cours",
+        hint: locale === "en" ? "Team members are discussing and preparing their strategy" : "Les membres discutent et préparent leur stratégie",
         timerColor: "text-cyan",
         barColor: "bg-cyan",
         bgTint: "bg-cyan/5"
@@ -24,8 +27,8 @@ function getPhaseConfig(state: RelayState) {
       return {
         accent: "hot" as const,
         icon: <Zap size={24} className="text-hot" />,
-        statusLabel: `Relais · Tour ${state.currentSlice + 1}`,
-        hint: "Silence total — le joueur au clavier code seul",
+        statusLabel: locale === "en" ? `Relay · Turn ${state.currentSlice + 1}` : `Relais · Tour ${state.currentSlice + 1}`,
+        hint: locale === "en" ? "Total silence — the keyboard player codes alone" : "Silence total — le joueur au clavier code seul",
         timerColor: "text-hot",
         barColor: "bg-hot",
         bgTint: "bg-hot/5"
@@ -34,8 +37,8 @@ function getPhaseConfig(state: RelayState) {
       return {
         accent: "warn" as const,
         icon: <Pause size={24} className="text-warn" />,
-        statusLabel: "Pause",
-        hint: "Chronomètre gelé — reprise par l'organisateur",
+        statusLabel: locale === "en" ? "Paused" : "Pause",
+        hint: locale === "en" ? "Timer frozen — waiting for the organizer to resume" : "Chronomètre gelé — reprise par l'organisateur",
         timerColor: "text-warn",
         barColor: "bg-warn",
         bgTint: "bg-warn/5"
@@ -44,8 +47,8 @@ function getPhaseConfig(state: RelayState) {
       return {
         accent: "success" as const,
         icon: <CheckCircle size={24} className="text-success" />,
-        statusLabel: "Manche terminée",
-        hint: "Le jury peut finaliser l'évaluation",
+        statusLabel: locale === "en" ? "Round complete" : "Manche terminée",
+        hint: locale === "en" ? "The judges can finalize scoring" : "Le jury peut finaliser l'évaluation",
         timerColor: "text-success",
         barColor: "bg-success",
         bgTint: "bg-success/5"
@@ -56,7 +59,7 @@ function getPhaseConfig(state: RelayState) {
         accent: "accent" as const,
         icon: <Clock size={24} className="text-accent-light" />,
         statusLabel: state.phaseLabel,
-        hint: "En attente du lancement par l'organisateur",
+        hint: locale === "en" ? "Waiting for the organizer to start" : "En attente du lancement par l'organisateur",
         timerColor: "text-accent-light",
         barColor: "bg-accent",
         bgTint: "bg-accent/5"
@@ -65,8 +68,9 @@ function getPhaseConfig(state: RelayState) {
 }
 
 export function PhaseTimer({ state, large = false }: PhaseTimerProps) {
+  const { locale } = useLocale();
   const progress = Math.min(100, state.progress);
-  const config = getPhaseConfig(state);
+  const config = getPhaseConfig(state, locale);
   const isUrgent = state.isRunning && state.remainingMs > 0 && state.remainingMs <= 30000;
 
   return (
@@ -104,7 +108,7 @@ export function PhaseTimer({ state, large = false }: PhaseTimerProps) {
           />
         </div>
         <div className="mt-2.5 flex items-center justify-between text-sm text-text-faint">
-          <span>40 correction · 20 edge · 20 complexité · 10 lisibilité · 10 rapidité</span>
+          <span>{locale === "en" ? "40 correctness · 20 edge · 20 complexity · 10 readability · 10 speed" : "40 correction · 20 edge · 20 complexité · 10 lisibilité · 10 rapidité"}</span>
           <span className="font-display font-bold">{progress}%</span>
         </div>
       </div>

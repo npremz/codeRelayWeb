@@ -1,0 +1,32 @@
+{
+  "title": "Two Sum",
+  "description": "Return the indices of the two elements in `nums` whose sum is exactly `target`. A unique solution exists, and the same element cannot be used twice.",
+  "parameters": [
+    {
+      "name": "nums",
+      "description": "Array of integers in which you need to find the correct pair."
+    },
+    {
+      "name": "target",
+      "description": "Exact sum to reach."
+    }
+  ],
+  "returns": {
+    "description": "The indices of the two elements, in any order."
+  },
+  "constraints": [
+    "2 <= nums.length <= 10^4",
+    "-10^9 <= nums[i], target <= 10^9",
+    "Exactly one valid solution exists",
+    "The same element cannot be used twice"
+  ],
+  "examples": [
+    {
+      "title": "Example 1",
+      "explanation": "nums[0] + nums[1] = 2 + 7 = 9."
+    },
+    {
+      "title": "Example 2"
+    }
+  ]
+}

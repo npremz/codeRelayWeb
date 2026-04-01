@@ -1,5 +1,9 @@
+"use client";
+
 import { Panel } from "@/components/panel";
+import { useLocale } from "@/components/locale-provider";
 import { formatTieBreakTuple, getStatusLabel } from "@/lib/demo-game";
+import { formatCopy } from "@/lib/locale";
 import { LiveTeam } from "@/lib/game-types";
 import { Trophy, Medal } from "lucide-react";
 
@@ -17,17 +21,17 @@ function getRankBadge(rank: number) {
   return { bg: "bg-elevated text-text-faint border-border", icon: null };
 }
 
-function getStatusBadge(status: string) {
+function getStatusBadge(status: LiveTeam["status"]) {
   switch (status) {
-    case "Inscrite":
+    case "registered":
       return "bg-text-faint/10 text-text-faint border-text-faint/20";
-    case "Prete":
+    case "ready":
       return "bg-cyan/10 text-cyan border-cyan/20";
-    case "En codage":
+    case "coding":
       return "bg-hot/10 text-hot border-hot/20";
-    case "Soumise":
+    case "submitted":
       return "bg-accent/10 text-accent-light border-accent/20";
-    case "Corrigee":
+    case "scored":
       return "bg-success/10 text-success border-success/20";
     default:
       return "bg-elevated text-text-muted border-border";
@@ -36,43 +40,47 @@ function getStatusBadge(status: string) {
 
 export function RankingTable({
   teams,
-  title = "Classement",
-  eyebrow = "Leaderboard",
+  title,
+  eyebrow,
   compact = false
 }: RankingTableProps) {
+  const { locale, messages } = useLocale();
+  const resolvedTitle = title ?? messages.ranking.title;
+  const resolvedEyebrow = eyebrow ?? messages.ranking.eyebrow;
+
   if (teams.length === 0) {
     return (
-      <Panel eyebrow={eyebrow} title={title}>
+      <Panel eyebrow={resolvedEyebrow} title={resolvedTitle}>
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <div className="mb-4 text-text-faint/40"><Trophy size={48} strokeWidth={1} /></div>
-          <p className="text-base text-text-muted">Aucune équipe classée pour le moment</p>
+          <p className="text-base text-text-muted">{messages.ranking.empty}</p>
         </div>
       </Panel>
     );
   }
 
   return (
-    <Panel eyebrow={eyebrow} title={title} noPad>
+    <Panel eyebrow={resolvedEyebrow} title={resolvedTitle} noPad>
       <div className="overflow-x-auto overflow-y-hidden rounded-b-2xl">
         <table className="w-full min-w-[320px] border-collapse">
           <thead>
             <tr className="border-b border-border bg-elevated/50">
               <th className="px-5 py-4 text-left text-xs font-bold uppercase tracking-wider text-text-faint">#</th>
-              <th className="px-5 py-4 text-left text-xs font-bold uppercase tracking-wider text-text-faint">Équipe</th>
+              <th className="px-5 py-4 text-left text-xs font-bold uppercase tracking-wider text-text-faint">{messages.ranking.team}</th>
               {!compact && (
-                <th className="hidden px-5 py-4 text-left text-xs font-bold uppercase tracking-wider text-text-faint md:table-cell">Statut</th>
+                <th className="hidden px-5 py-4 text-left text-xs font-bold uppercase tracking-wider text-text-faint md:table-cell">{messages.ranking.status}</th>
               )}
               {!compact && (
-                <th className="hidden px-5 py-4 text-left text-xs font-bold uppercase tracking-wider text-text-faint lg:table-cell">Joueur actif</th>
+                <th className="hidden px-5 py-4 text-left text-xs font-bold uppercase tracking-wider text-text-faint lg:table-cell">{messages.ranking.activePlayer}</th>
               )}
-              <th className="px-5 py-4 text-right text-xs font-bold uppercase tracking-wider text-text-faint">Total</th>
+              <th className="px-5 py-4 text-right text-xs font-bold uppercase tracking-wider text-text-faint">{messages.ranking.total}</th>
             </tr>
           </thead>
           <tbody>
             {teams.map((team) => {
               const rankBadge = getRankBadge(team.rank);
-              const statusLabel = getStatusLabel(team.status);
-              const statusBadge = getStatusBadge(statusLabel);
+              const statusLabel = getStatusLabel(team.status, locale);
+              const statusBadge = getStatusBadge(team.status);
 
               return (
                 <tr key={team.id} className="border-b border-border/50 transition-colors hover:bg-elevated/30">
@@ -106,7 +114,7 @@ export function RankingTable({
                         </span>
                       ) : (
                         <span className="text-sm text-text-faint">
-                          {team.submissionOrder ? `Soumise #${team.submissionOrder}` : "—"}
+                          {team.submissionOrder ? formatCopy(messages.ranking.submittedOrder, { order: team.submissionOrder }) : "—"}
                         </span>
                       )}
                     </td>
@@ -124,7 +132,10 @@ export function RankingTable({
                     )}
                     {!compact && team.carryOverScore > 0 && (
                       <p className="mt-0.5 text-xs text-text-faint">
-                        {team.carryOverScore} reportés + {team.roundScore} sur cette manche
+                        {formatCopy(messages.ranking.carryOver, {
+                          carry: team.carryOverScore,
+                          round: team.roundScore
+                        })}
                       </p>
                     )}
                   </td>

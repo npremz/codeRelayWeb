@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Space_Grotesk, JetBrains_Mono } from "next/font/google";
+import { LocaleProvider } from "@/components/locale-provider";
+import { getRequestLocaleState } from "@/lib/request-locale";
 import "./globals.css";
 
 const displayFont = Space_Grotesk({
@@ -19,10 +21,16 @@ export const metadata: Metadata = {
   description: "Tournoi de programmation en relais"
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const { locale, source } = await getRequestLocaleState();
+
   return (
-    <html lang="fr">
-      <body className={`${displayFont.variable} ${bodyFont.variable} mb-16`}>{children}</body>
+    <html lang={locale}>
+      <body className={`${displayFont.variable} ${bodyFont.variable} mb-16`}>
+        <LocaleProvider initialLocale={locale} initialSource={source}>
+          {children}
+        </LocaleProvider>
+      </body>
     </html>
   );
 }

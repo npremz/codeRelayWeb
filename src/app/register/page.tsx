@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { AppFrame } from "@/components/app-frame";
+import { useLocale } from "@/components/locale-provider";
 import { Panel } from "@/components/panel";
 import { getStoredTeamAccess, storeTeamAccess } from "@/lib/team-access";
 import { MAX_TEAM_MEMBERS, MIN_TEAM_MEMBERS, RELAY_SEAT_LABELS, TeamCreateResponse } from "@/lib/game-types";
+import { formatCopy, getDateTimeLocale } from "@/lib/locale";
 import { useLiveTeams } from "@/lib/use-live-teams";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Key, Users } from "lucide-react";
@@ -23,6 +25,7 @@ function getRelayColor(index: number) {
 }
 
 export default function RegisterPage() {
+  const { locale, messages } = useLocale();
   const [teamName, setTeamName] = useState("");
   const [memberNames, setMemberNames] = useState(DEFAULT_MEMBER_NAMES);
   const [myTeamCodes, setMyTeamCodes] = useState<string[]>([]);
@@ -70,7 +73,7 @@ export default function RegisterPage() {
       const payload = (await response.json()) as TeamCreateResponse & { error?: string };
 
       if (!response.ok) {
-        throw new Error(payload.error ?? "Impossible de créer l'équipe.");
+        throw new Error(payload.error ?? (locale === "en" ? "Unable to create the team." : "Impossible de créer l'équipe."));
       }
 
       storeTeamAccess(payload.team.teamCode, payload.editToken);
@@ -80,7 +83,7 @@ export default function RegisterPage() {
       setTeamName("");
       setMemberNames(DEFAULT_MEMBER_NAMES);
     } catch (nextError) {
-      setError(nextError instanceof Error ? nextError.message : "Impossible de créer l'équipe.");
+      setError(nextError instanceof Error ? nextError.message : (locale === "en" ? "Unable to create the team." : "Impossible de créer l'équipe."));
     } finally {
       setSubmitting(false);
     }
@@ -106,19 +109,19 @@ export default function RegisterPage() {
 
   return (
     <AppFrame
-      title="Inscription"
-      subtitle="Enregistrement des équipes"
+      title={messages.register.title}
+      subtitle={messages.register.subtitle}
       currentRound={currentRound}
     >
       <div className="grid gap-6 lg:grid-cols-[1fr_1.1fr]">
         {/* ── Left column: Registration form ──────────────── */}
         <div className="space-y-6">
-          <Panel accent="accent" eyebrow="Check-in" title="Créer une équipe">
+          <Panel accent="accent" eyebrow={messages.register.checkIn} title={messages.register.createTeam}>
             <form className="space-y-6" onSubmit={handleSubmit}>
               {/* Team name */}
               <label className="block">
                 <span className="mb-2.5 block text-xs font-semibold uppercase tracking-wider text-text-muted">
-                  Nom de l&apos;équipe
+                  {messages.register.teamName}
                 </span>
                 <input
                   className="signal-input"
@@ -131,7 +134,7 @@ export default function RegisterPage() {
               {/* Player inputs */}
               <div className="space-y-3.5">
                 <div className="flex items-center justify-between gap-3">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-text-muted">Joueurs</p>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-text-muted">{messages.register.players}</p>
                   <div className="flex gap-2">
                     <button
                       className="ghost-button px-3 py-2 text-xs"
@@ -139,7 +142,7 @@ export default function RegisterPage() {
                       disabled={memberNames.length <= MIN_TEAM_MEMBERS}
                       type="button"
                     >
-                      - Retirer
+                      {messages.register.remove}
                     </button>
                     <button
                       className="ghost-button px-3 py-2 text-xs"
@@ -147,7 +150,7 @@ export default function RegisterPage() {
                       disabled={memberNames.length >= MAX_TEAM_MEMBERS}
                       type="button"
                     >
-                      + Ajouter
+                      {messages.register.add}
                     </button>
                   </div>
                 </div>
@@ -165,7 +168,7 @@ export default function RegisterPage() {
                   </label>
                 ))}
                 <p className="text-xs text-text-faint">
-                  Entre {MIN_TEAM_MEMBERS} et {MAX_TEAM_MEMBERS} joueurs par équipe.
+                  {formatCopy(messages.register.membersHint, { min: MIN_TEAM_MEMBERS, max: MAX_TEAM_MEMBERS })}
                 </p>
               </div>
 
@@ -178,12 +181,12 @@ export default function RegisterPage() {
                 <span className={`inline-block h-2.5 w-2.5 shrink-0 rounded-full ${
                   round.registrationOpen ? "bg-success animate-pulse-glow" : "bg-hot"
                 }`} />
-                Inscriptions {round.registrationOpen ? "ouvertes" : "fermées"}
+                {round.registrationOpen ? messages.register.registrationOpen : messages.register.registrationClosed}
               </div>
 
               {/* Info box */}
               <div className="rounded-xl border border-border bg-elevated/50 px-5 py-4 text-sm leading-relaxed text-text-muted">
-                Sans login : on génère un code équipe public et un token secret d&apos;édition mémorisé sur cet appareil.
+                {messages.register.noLoginInfo}
               </div>
 
               {/* Error message */}
@@ -206,7 +209,7 @@ export default function RegisterPage() {
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
                 )}
-                <span>{submitting ? "Création..." : round.registrationOpen ? "Inscrire l'équipe" : "Inscriptions fermées"}</span>
+                <span>{submitting ? messages.register.submitCreating : round.registrationOpen ? messages.register.submitCreate : messages.register.submitClosed}</span>
               </button>
             </form>
           </Panel>
@@ -216,47 +219,47 @@ export default function RegisterPage() {
             <div className="animate-slide-up rounded-2xl border border-success/25 bg-success/5 p-6">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-success">Équipe créée</p>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-success">{messages.register.successEyebrow}</p>
                   <h3 className="mt-1.5 font-display text-2xl font-bold tracking-tight text-text">{createdTeam.team.name}</h3>
                   <p className="mt-2 text-sm text-text-muted">
-                    Code : <span className="font-mono text-base font-semibold text-text">{createdTeam.team.teamCode}</span>
+                    {messages.register.codeLabel} : <span className="font-mono text-base font-semibold text-text">{createdTeam.team.teamCode}</span>
                   </p>
                 </div>
                 <Link
                   className="signal-button shrink-0"
                   href={`/team/${createdTeam.team.teamCode}/manage`}
                 >
-                  Gérer
+                  {messages.register.manage}
                 </Link>
               </div>
               <p className="mt-4 text-sm leading-relaxed text-text-muted">
-                Le token secret est stocké sur cet appareil. Le lien de gestion reste accessible ci-dessous.
+                {messages.register.tokenStored}
               </p>
             </div>
           )}
 
           {/* ── My access links ──────────────────────── */}
-          <Panel eyebrow="Mes accès" title="Liens de gestion">
+          <Panel eyebrow={messages.register.myAccessEyebrow} title={messages.register.myAccessTitle}>
             {myTeams.length === 0 && !createdTeam && (
               <div className="flex flex-col items-center py-8 text-center">
                 <div className="mb-3 text-text-faint/40"><Key size={48} strokeWidth={1} /></div>
-                <p className="text-sm text-text-muted">Aucun accès mémorisé sur cet appareil pour le moment.</p>
+                <p className="text-sm text-text-muted">{messages.register.noAccess}</p>
               </div>
             )}
             <div className="space-y-3">
               {myTeams.map((team) => (
                 <div key={team.id} className="flex items-center justify-between gap-4 rounded-xl border border-border bg-elevated/50 px-5 py-4">
                   <div className="min-w-0">
-                    <p className="font-display text-base font-semibold tracking-tight text-text truncate">{team.name}</p>
-                    <p className="mt-0.5 text-sm text-text-faint">
-                      {team.teamCode} · {team.station}
+                      <p className="font-display text-base font-semibold tracking-tight text-text truncate">{team.name}</p>
+                      <p className="mt-0.5 text-sm text-text-faint">
+                        {team.teamCode} · {team.station}
                     </p>
                   </div>
                   <Link
                     className="ghost-button shrink-0"
                     href={`/team/${team.teamCode}/manage`}
                   >
-                    Ouvrir
+                    {messages.register.open}
                   </Link>
                 </div>
               ))}
@@ -266,11 +269,11 @@ export default function RegisterPage() {
 
         {/* ── Right column: Registered teams + Rules ──── */}
         <div className="space-y-6">
-          <Panel eyebrow="Tournoi" title="Équipes inscrites">
+          <Panel eyebrow={messages.register.tournamentEyebrow} title={messages.register.teamsTitle}>
             {teams.length === 0 && (
               <div className="flex flex-col items-center py-10 text-center">
                 <div className="mb-3 text-text-faint/40"><Users size={48} strokeWidth={1} /></div>
-                <p className="text-base text-text-muted">Aucune équipe enregistrée pour le moment.</p>
+                <p className="text-base text-text-muted">{messages.register.noTeams}</p>
               </div>
             )}
             <div className="space-y-4">
@@ -280,7 +283,10 @@ export default function RegisterPage() {
                     <div className="min-w-0">
                       <p className="font-display text-lg font-bold tracking-tight text-text truncate">{team.name}</p>
                       <p className="mt-1 text-sm text-text-faint">
-                        {team.teamCode} · {new Date(team.createdAt).toLocaleString("fr-BE")}
+                        {formatCopy(messages.register.createdAtLabel, {
+                          teamCode: team.teamCode,
+                          date: new Date(team.createdAt).toLocaleString(getDateTimeLocale(locale))
+                        })}
                       </p>
                     </div>
                     <span className={`shrink-0 inline-flex items-center rounded-lg border px-3 py-1.5 text-xs font-semibold ${
@@ -288,7 +294,7 @@ export default function RegisterPage() {
                         ? "border-hot/20 bg-hot/10 text-hot"
                         : "border-success/20 bg-success/10 text-success"
                     }`}>
-                      {team.locked ? "Verrouillée" : "Éditable"}
+                      {team.locked ? messages.register.locked : messages.register.editable}
                     </span>
                   </div>
 
@@ -308,24 +314,14 @@ export default function RegisterPage() {
             </div>
           </Panel>
 
-          <Panel accent="success" eyebrow="Règlement" title="Rappel des règles">
+          <Panel accent="success" eyebrow={messages.register.rulesEyebrow} title={messages.register.rulesTitle}>
             <ul className="space-y-4 text-sm leading-relaxed text-text-muted">
-              <li className="flex items-start gap-3">
-                <span className="mt-0.5 text-base text-cyan">→</span>
-                <span>5 min de réflexion collective avant le premier passage clavier.</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="mt-0.5 text-base text-cyan">→</span>
-                <span>Relais de 2 min par joueur selon un ordre fixe A, B, C.</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="mt-0.5 text-base text-cyan">→</span>
-                <span>Aucune communication avec le joueur au clavier pendant son tour.</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="mt-0.5 text-base text-cyan">→</span>
-                <span>Le code équipe est public. Le lien d&apos;édition est secret et propre à l&apos;équipe.</span>
-              </li>
+              {messages.register.rules.map((rule) => (
+                <li key={rule} className="flex items-start gap-3">
+                  <span className="mt-0.5 text-base text-cyan">→</span>
+                  <span>{rule}</span>
+                </li>
+              ))}
             </ul>
           </Panel>
         </div>

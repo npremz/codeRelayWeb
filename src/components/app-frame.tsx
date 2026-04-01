@@ -3,27 +3,11 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ReactNode, useState, useEffect } from "react";
+import { LanguageSwitch } from "@/components/language-switch";
+import { useLocale } from "@/components/locale-provider";
 import { RoundSummary } from "@/lib/game-types";
 
 import { Home, UserPlus, Settings, Star, BarChart3, Tv, FileText, ShieldAlert } from "lucide-react";
-
-const publicLinks = [
-  { href: "/", label: "Accueil", icon: <Home size={16} /> },
-  { href: "/register", label: "Inscription", icon: <UserPlus size={16} /> },
-  { href: "/brief", label: "Brief", icon: <FileText size={16} /> },
-  { href: "/results", label: "Résultats", icon: <BarChart3 size={16} /> },
-  { href: "/staff", label: "Staff", icon: <ShieldAlert size={16} /> }
-];
-
-const adminLinks = [
-  { href: "/admin", label: "Admin", icon: <Settings size={16} /> },
-  { href: "/judge", label: "Jury", icon: <Star size={16} /> },
-  { href: "/tv", label: "TV", icon: <Tv size={16} /> }
-];
-
-const judgeLinks = [
-  { href: "/judge", label: "Jury", icon: <Star size={16} /> }
-];
 
 type StaffRole = "admin" | "judge";
 
@@ -38,7 +22,23 @@ type AppFrameProps = {
 
 export function AppFrame({ title, subtitle, children, currentRound, navigation = "public", staffRole }: AppFrameProps) {
   const pathname = usePathname();
+  const { messages } = useLocale();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const publicLinks = [
+    { href: "/", label: messages.nav.home, icon: <Home size={16} /> },
+    { href: "/register", label: messages.nav.register, icon: <UserPlus size={16} /> },
+    { href: "/brief", label: messages.nav.brief, icon: <FileText size={16} /> },
+    { href: "/results", label: messages.nav.results, icon: <BarChart3 size={16} /> },
+    { href: "/staff", label: messages.nav.staff, icon: <ShieldAlert size={16} /> }
+  ];
+  const adminLinks = [
+    { href: "/admin", label: messages.nav.admin, icon: <Settings size={16} /> },
+    { href: "/judge", label: messages.nav.judge, icon: <Star size={16} /> },
+    { href: "/tv", label: messages.nav.tv, icon: <Tv size={16} /> }
+  ];
+  const judgeLinks = [
+    { href: "/judge", label: messages.nav.judge, icon: <Star size={16} /> }
+  ];
   const links = navigation === "staff"
     ? [
         ...publicLinks,
@@ -85,61 +85,59 @@ export function AppFrame({ title, subtitle, children, currentRound, navigation =
             </div>
           </div>
 
-          {/* Navigation - Desktop */}
-          <nav className="hidden md:flex md:items-center md:gap-1.5 rounded-2xl bg-surface/60 p-1.5 shadow-sm ring-1 ring-border backdrop-blur-xl">
-            {links.map((link) => {
-              const active = pathname === link.href;
+          <div className="hidden md:flex md:items-center md:gap-3">
+            <nav className="md:flex md:items-center md:gap-1.5 rounded-2xl bg-surface/60 p-1.5 shadow-sm ring-1 ring-border backdrop-blur-xl">
+              {links.map((link) => {
+                const active = pathname === link.href;
 
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={`group relative flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-all duration-300 ease-out ${
-                    active
-                      ? "text-text"
-                      : "text-text-faint hover:text-text-muted"
-                  }`}
-                  aria-current={active ? "page" : undefined}
-                >
-                  {/* Active Indicator Background */}
-                  {active && (
-                    <span 
-                      className="absolute inset-0 rounded-xl bg-elevated shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] ring-1 ring-border/50" 
-                      aria-hidden="true" 
-                    />
-                  )}
-                  
-                  {/* Tech Notch / Glow Indicator */}
-                  {active && (
-                    <span 
-                      className="absolute -bottom-[6px] left-1/2 h-[3px] w-6 -translate-x-1/2 rounded-t-md bg-accent shadow-[0_-2px_12px_var(--color-accent-glow)]" 
-                      aria-hidden="true" 
-                    />
-                  )}
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className={`group relative flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-all duration-300 ease-out ${
+                      active
+                        ? "text-text"
+                        : "text-text-faint hover:text-text-muted"
+                    }`}
+                    aria-current={active ? "page" : undefined}
+                  >
+                    {active && (
+                      <span
+                        className="absolute inset-0 rounded-xl bg-elevated shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] ring-1 ring-border/50"
+                        aria-hidden="true"
+                      />
+                    )}
 
-                  {/* Icon */}
-                  <span className={`relative z-10 flex items-center justify-center transition-all duration-300 ${
-                    active 
-                      ? "text-accent scale-110 drop-shadow-sm" 
-                      : "group-hover:scale-110 group-hover:text-text"
-                  }`}>
-                    {link.icon}
-                  </span>
+                    {active && (
+                      <span
+                        className="absolute -bottom-[6px] left-1/2 h-[3px] w-6 -translate-x-1/2 rounded-t-md bg-accent shadow-[0_-2px_12px_var(--color-accent-glow)]"
+                        aria-hidden="true"
+                      />
+                    )}
 
-                  {/* Label */}
-                  <span className={`relative z-10 tracking-wide ${active ? "" : "font-medium"}`}>
-                    {link.label}
-                  </span>
-                </Link>
-              );
-            })}
-          </nav>
+                    <span className={`relative z-10 flex items-center justify-center transition-all duration-300 ${
+                      active
+                        ? "text-accent scale-110 drop-shadow-sm"
+                        : "group-hover:scale-110 group-hover:text-text"
+                    }`}>
+                      {link.icon}
+                    </span>
+
+                    <span className={`relative z-10 tracking-wide ${active ? "" : "font-medium"}`}>
+                      {link.label}
+                    </span>
+                  </Link>
+                );
+              })}
+            </nav>
+            <LanguageSwitch />
+          </div>
 
           {/* Hamburger Button - Mobile */}
           <button
             className="flex h-10 w-10 items-center justify-center rounded-lg bg-elevated text-text-muted transition-colors hover:bg-border md:hidden"
             onClick={() => setIsMobileMenuOpen(true)}
-            aria-label="Ouvrir le menu"
+            aria-label={messages.appFrame.openMenu}
             aria-expanded={isMobileMenuOpen}
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -169,17 +167,21 @@ export function AppFrame({ title, subtitle, children, currentRound, navigation =
         }`}
       >
         <div className="flex items-center justify-between mb-8">
-          <span className="font-display font-bold text-accent-light tracking-widest uppercase text-sm">Menu</span>
+          <span className="font-display font-bold text-accent-light tracking-widest uppercase text-sm">{messages.appFrame.menu}</span>
           <button
             className="flex h-10 w-10 items-center justify-center rounded-lg bg-void text-text-muted transition-colors hover:bg-border"
             onClick={() => setIsMobileMenuOpen(false)}
-            aria-label="Fermer le menu"
+            aria-label={messages.appFrame.closeMenu}
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="18" y1="6" x2="6" y2="18"></line>
               <line x1="6" y1="6" x2="18" y2="18"></line>
             </svg>
           </button>
+        </div>
+
+        <div className="mb-6">
+          <LanguageSwitch compact />
         </div>
 
         <nav className="flex flex-col gap-2">

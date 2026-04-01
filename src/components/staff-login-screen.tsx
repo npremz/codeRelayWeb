@@ -1,6 +1,7 @@
 "use client";
 
 import { AppFrame } from "@/components/app-frame";
+import { useLocale } from "@/components/locale-provider";
 import { Panel } from "@/components/panel";
 import { FormEvent, useMemo, useState } from "react";
 import { Settings, Star, Lock } from "lucide-react";
@@ -13,6 +14,7 @@ type StaffLoginScreenProps = {
 };
 
 export function StaffLoginScreen({ preferredRole, nextPath }: StaffLoginScreenProps) {
+  const { locale, messages } = useLocale();
   const [selectedRole, setSelectedRole] = useState<Role>(preferredRole);
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
@@ -22,16 +24,16 @@ export function StaffLoginScreen({ preferredRole, nextPath }: StaffLoginScreenPr
     () =>
       selectedRole === "admin"
         ? {
-            label: "Organisateur",
-            hint: "Accès au tableau de pilotage complet du tournoi",
+            label: messages.staff.adminLabel,
+            hint: messages.staff.adminHint,
             icon: <Settings size={16} className="inline-block mr-1" />
           }
         : {
-            label: "Jury",
-            hint: "Accès au cockpit de notation des équipes",
+            label: messages.staff.judgeLabel,
+            hint: messages.staff.judgeHint,
             icon: <Star size={16} className="inline-block mr-1" />
           },
-    [selectedRole]
+    [messages.staff.adminHint, messages.staff.adminLabel, messages.staff.judgeHint, messages.staff.judgeLabel, selectedRole]
   );
 
   const redirectPath =
@@ -62,12 +64,12 @@ export function StaffLoginScreen({ preferredRole, nextPath }: StaffLoginScreenPr
       const payload = (await response.json()) as { redirectPath?: string; error?: string };
 
       if (!response.ok || !payload.redirectPath) {
-        throw new Error(payload.error ?? "Connexion staff impossible.");
+        throw new Error(payload.error ?? (locale === "en" ? "Unable to sign in to staff." : "Connexion staff impossible."));
       }
 
       window.location.href = payload.redirectPath;
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Connexion staff impossible.");
+      setMessage(error instanceof Error ? error.message : (locale === "en" ? "Unable to sign in to staff." : "Connexion staff impossible."));
     } finally {
       setBusy(false);
     }
@@ -80,9 +82,9 @@ export function StaffLoginScreen({ preferredRole, nextPath }: StaffLoginScreenPr
     try {
       await fetch("/api/staff/session", { method: "DELETE" });
       setCode("");
-      setMessage("Session staff fermée.");
+      setMessage(messages.staff.signedOut);
     } catch {
-      setMessage("Impossible de fermer la session.");
+      setMessage(locale === "en" ? "Unable to close the session." : "Impossible de fermer la session.");
     } finally {
       setBusy(false);
     }
@@ -90,8 +92,8 @@ export function StaffLoginScreen({ preferredRole, nextPath }: StaffLoginScreenPr
 
   return (
     <AppFrame
-      title="Accès Staff"
-      subtitle="Connexion sécurisée pour organisateurs et jury"
+      title={messages.staff.title}
+      subtitle={messages.staff.subtitle}
     >
       <div className="mx-auto max-w-xl">
         <Panel>
@@ -101,8 +103,8 @@ export function StaffLoginScreen({ preferredRole, nextPath }: StaffLoginScreenPr
               <Lock size={28} />
             </div>
             <div>
-              <h2 className="font-display text-2xl font-bold tracking-tight">Connexion Staff</h2>
-              <p className="mt-1 text-sm text-text-muted">Entrez votre code d'accès pour continuer</p>
+              <h2 className="font-display text-2xl font-bold tracking-tight">{messages.staff.heading}</h2>
+              <p className="mt-1 text-sm text-text-muted">{messages.staff.headingDescription}</p>
             </div>
           </div>
 
@@ -122,7 +124,7 @@ export function StaffLoginScreen({ preferredRole, nextPath }: StaffLoginScreenPr
                 >
                   <span className="flex justify-center text-2xl mb-2">{role === "admin" ? <Settings size={24} /> : <Star size={24} />}</span>
                   <span className="block text-sm font-bold uppercase tracking-wide">
-                    {role === "admin" ? "Admin" : "Jury"}
+                    {role === "admin" ? messages.nav.admin : messages.staff.judgeLabel}
                   </span>
                 </button>
               ))}
@@ -134,20 +136,20 @@ export function StaffLoginScreen({ preferredRole, nextPath }: StaffLoginScreenPr
             </div>
 
             <div className="rounded-xl border border-border bg-elevated/30 px-4 py-3 text-sm text-text-muted">
-              Redirection après connexion: <span className="font-semibold text-text">{redirectPath}</span>
+              {messages.staff.redirect}: <span className="font-semibold text-text">{redirectPath}</span>
             </div>
 
             {/* Code input */}
             <label className="block">
               <span className="mb-2 block text-xs font-bold uppercase tracking-wider text-text-faint">
-                Code d'accès
+                {messages.staff.accessCode}
               </span>
               <input
                 className="signal-input"
                 type="password"
                 value={code}
                 onChange={(event) => setCode(event.target.value)}
-                placeholder="Entrez le code..."
+                placeholder={messages.staff.codePlaceholder}
               />
             </label>
 
@@ -165,29 +167,29 @@ export function StaffLoginScreen({ preferredRole, nextPath }: StaffLoginScreenPr
             {/* Action buttons */}
             <div className="flex gap-3">
               <button className="signal-button flex-1" type="submit" disabled={busy || code.trim().length === 0}>
-                {busy ? "Connexion..." : "Se connecter"}
+                {busy ? messages.staff.signingIn : messages.staff.signIn}
               </button>
               <button className="ghost-button" onClick={handleLogout} type="button" disabled={busy}>
-                Déconnexion
+                {messages.staff.signOut}
               </button>
             </div>
           </form>
 
           {/* Info section */}
           <div className="mt-8 border-t border-border pt-6">
-            <h3 className="text-sm font-bold text-text-muted">Niveaux d'accès</h3>
+            <h3 className="text-sm font-bold text-text-muted">{messages.staff.accessLevels}</h3>
             <ul className="mt-3 space-y-2.5 text-sm text-text-muted">
               <li className="flex items-start gap-3">
                 <span className="mt-0.5 text-accent-light">→</span>
-                <span><strong className="text-text">Participants</strong> — sans login, code équipe public + token secret</span>
+                <span><strong className="text-text">{messages.staff.participantsAccess}</strong> — {messages.staff.participantsHint}</span>
               </li>
               <li className="flex items-start gap-3">
                 <span className="mt-0.5 text-accent-light">→</span>
-                <span><strong className="text-text">Admin</strong> — contrôle total du tournoi et des manches</span>
+                <span><strong className="text-text">{messages.staff.adminAccess}</strong> — {messages.staff.adminAccessHint}</span>
               </li>
               <li className="flex items-start gap-3">
                 <span className="mt-0.5 text-accent-light">→</span>
-                <span><strong className="text-text">Jury</strong> — notation et cockpit de correction</span>
+                <span><strong className="text-text">{messages.staff.judgeAccess}</strong> — {messages.staff.judgeAccessHint}</span>
               </li>
             </ul>
           </div>

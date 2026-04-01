@@ -1,0 +1,35 @@
+{
+  "title": "Longest Substring Without Repeating Characters",
+  "description": "Return the length of the longest substring of `s` that contains no repeated character. A substring must be contiguous.",
+  "parameters": [
+    {
+      "name": "s",
+      "description": "Input string in which you need to find the longest window without duplicates."
+    }
+  ],
+  "returns": {
+    "description": "The maximum length of a contiguous substring without repetition."
+  },
+  "constraints": [
+    "0 <= s.length <= 5 * 10^4",
+    "`s` may contain letters, digits, symbols, or spaces",
+    "The target substring must be contiguous"
+  ],
+  "examples": [
+    {
+      "title": "Example 1",
+      "explanation": "The best substring is `abc`."
+    },
+    {
+      "title": "Example 2",
+      "explanation": "The only longest valid substring is `b`."
+    },
+    {
+      "title": "Example 3",
+      "explanation": "`wke` is valid, but `pwke` is not contiguous."
+    },
+    {
+      "title": "Example 4"
+    }
+  ]
+}

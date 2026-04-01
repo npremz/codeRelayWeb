@@ -1,0 +1,32 @@
+{
+  "title": "Valid Parentheses",
+  "description": "Return `true` if the string `s` is properly balanced. Every opening symbol must be closed by the correct symbol in the correct order.",
+  "parameters": [
+    {
+      "name": "s",
+      "description": "String made only of parentheses, brackets, and braces."
+    }
+  ],
+  "returns": {
+    "description": "`true` if the string is valid, otherwise `false`."
+  },
+  "constraints": [
+    "1 <= s.length <= 10^4",
+    "`s` contains only `()[]{}`",
+    "No opening symbol may remain unmatched"
+  ],
+  "examples": [
+    {
+      "title": "Example 1"
+    },
+    {
+      "title": "Example 2"
+    },
+    {
+      "title": "Example 3"
+    },
+    {
+      "title": "Example 4"
+    }
+  ]
+}

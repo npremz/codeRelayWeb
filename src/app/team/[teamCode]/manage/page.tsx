@@ -1,8 +1,10 @@
 "use client";
 
 import { AppFrame } from "@/components/app-frame";
+import { useLocale } from "@/components/locale-provider";
 import { Panel } from "@/components/panel";
 import { MAX_TEAM_MEMBERS, MIN_TEAM_MEMBERS, PublicTeam, RELAY_SEAT_LABELS } from "@/lib/game-types";
+import { formatCopy, getDateTimeLocale } from "@/lib/locale";
 import { getStoredToken, storeTeamAccess } from "@/lib/team-access";
 import { useLiveTeams } from "@/lib/use-live-teams";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
@@ -21,6 +23,7 @@ function getRelayColor(index: number) {
 }
 
 export default function ManageTeamPage() {
+  const { locale, messages } = useLocale();
   const params = useParams<{ teamCode: string }>();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -43,7 +46,11 @@ export default function ManageTeamPage() {
 
     if (!nextToken) {
       setLoading(false);
-      setError("Ce lien d'administration doit être ouvert une première fois avec son token secret.");
+      setError(
+        locale === "en"
+          ? "This management link must be opened once with its secret token first."
+          : "Ce lien d'administration doit être ouvert une première fois avec son token secret."
+      );
       return;
     }
 
@@ -75,7 +82,7 @@ export default function ManageTeamPage() {
         const payload = (await response.json()) as { team?: PublicTeam; error?: string };
 
         if (!response.ok || !payload.team) {
-          throw new Error(payload.error ?? "Accès refusé.");
+          throw new Error(payload.error ?? (locale === "en" ? "Access denied." : "Accès refusé."));
         }
 
         if (!cancelled) {
@@ -85,7 +92,7 @@ export default function ManageTeamPage() {
         }
       } catch (nextError) {
         if (!cancelled) {
-          setError(nextError instanceof Error ? nextError.message : "Impossible de charger l'équipe.");
+          setError(nextError instanceof Error ? nextError.message : (locale === "en" ? "Unable to load the team." : "Impossible de charger l'équipe."));
         }
       } finally {
         if (!cancelled) {
@@ -137,13 +144,13 @@ export default function ManageTeamPage() {
       const payload = (await response.json()) as { team?: PublicTeam; error?: string };
 
       if (!response.ok || !payload.team) {
-        throw new Error(payload.error ?? "Impossible de mettre à jour l'équipe.");
+        throw new Error(payload.error ?? (locale === "en" ? "Unable to update the team." : "Impossible de mettre à jour l'équipe."));
       }
 
       setTeam(payload.team);
-      setMessage("Équipe mise à jour.");
+      setMessage(messages.manage.updated);
     } catch (nextError) {
-      setError(nextError instanceof Error ? nextError.message : "Impossible de mettre à jour l'équipe.");
+      setError(nextError instanceof Error ? nextError.message : (locale === "en" ? "Unable to update the team." : "Impossible de mettre à jour l'équipe."));
     } finally {
       setSaving(false);
     }
@@ -167,19 +174,19 @@ export default function ManageTeamPage() {
 
   return (
     <AppFrame
-      title="Gestion équipe"
-      subtitle="Modifier la composition de votre équipe"
+      title={messages.manage.title}
+      subtitle={messages.manage.subtitle}
       currentRound={currentRound}
     >
       <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
         {/* ── Left column: Team info ─────────────────── */}
         <div className="space-y-6">
-          <Panel accent="accent" eyebrow="Accès sécurisé" title={team ? `${team.name}` : teamCode}>
+          <Panel accent="accent" eyebrow={messages.manage.secureAccess} title={team ? `${team.name}` : teamCode}>
             {/* Loading */}
             {loading && (
               <div className="flex items-center gap-3 py-6">
                 <div className="h-5 w-5 animate-spin rounded-full border-2 border-accent border-t-transparent" />
-                <p className="text-base text-text-muted">Chargement de l&apos;équipe...</p>
+                <p className="text-base text-text-muted">{messages.manage.loading}</p>
               </div>
             )}
 
@@ -201,43 +208,43 @@ export default function ManageTeamPage() {
                 {/* Info rows */}
                 <div className="rounded-xl border border-border bg-elevated/50 px-5 py-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-text-muted">Code équipe</span>
+                    <span className="text-sm text-text-muted">{messages.manage.teamCode}</span>
                     <span className="font-mono text-base font-semibold text-accent-light">{team.teamCode}</span>
                   </div>
                 </div>
                 <div className="rounded-xl border border-border bg-elevated/50 px-5 py-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-text-muted">Station</span>
+                    <span className="text-sm text-text-muted">{messages.manage.station}</span>
                     <span className="text-base text-text">{team.station}</span>
                   </div>
                 </div>
                 <div className="rounded-xl border border-border bg-elevated/50 px-5 py-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-text-muted">État</span>
+                    <span className="text-sm text-text-muted">{messages.manage.status}</span>
                     <span className={`inline-flex items-center rounded-lg border px-3 py-1.5 text-xs font-semibold ${
                       team.locked
                         ? "border-hot/20 bg-hot/10 text-hot"
                         : "border-success/20 bg-success/10 text-success"
                     }`}>
-                      {team.locked ? "Verrouillée" : "Éditable"}
+                      {team.locked ? messages.manage.locked : messages.manage.editable}
                     </span>
                   </div>
                 </div>
                 <div className="rounded-xl border border-border bg-elevated/50 px-5 py-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-text-muted">Dernière mise à jour</span>
-                    <span className="text-sm text-text">{new Date(team.updatedAt).toLocaleString("fr-BE")}</span>
+                    <span className="text-sm text-text-muted">{messages.manage.lastUpdate}</span>
+                    <span className="text-sm text-text">{new Date(team.updatedAt).toLocaleString(getDateTimeLocale(locale))}</span>
                   </div>
                 </div>
 
                 {/* Current roster */}
                 <div className="pt-3">
-                  <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-text-faint">Composition actuelle</p>
+                  <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-text-faint">{messages.manage.rosterTitle}</p>
                   <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                     {team.members.map((member, memberIndex) => (
                       <div key={member.id} className={`rounded-lg border ${getRelayColor(memberIndex).border} bg-surface px-4 py-3 text-center`}>
                         <p className={`text-xs font-semibold uppercase tracking-wider ${getRelayColor(memberIndex).text}`}>
-                          Relais {member.relayOrder}
+                          {formatCopy(messages.manage.relayLabel, { order: member.relayOrder })}
                         </p>
                         <p className="mt-1.5 text-sm font-medium text-text truncate">{member.name}</p>
                       </div>
@@ -248,7 +255,7 @@ export default function ManageTeamPage() {
                 {/* Locked warning */}
                 {team.locked && (
                   <div className="rounded-xl border border-warn/20 bg-warn/5 px-5 py-4 text-sm leading-relaxed text-warn">
-                    Cette équipe est verrouillée par l&apos;organisateur. Les modifications ne sont plus possibles.
+                    {messages.manage.lockedWarning}
                   </div>
                 )}
               </div>
@@ -258,12 +265,12 @@ export default function ManageTeamPage() {
 
         {/* ── Right column: Edit form ────────────────── */}
         <div className="space-y-6">
-          <Panel accent={team?.locked ? "hot" : "success"} eyebrow="Édition" title="Modifier l'équipe">
+          <Panel accent={team?.locked ? "hot" : "success"} eyebrow={messages.manage.editEyebrow} title={messages.manage.editTitle}>
             <form className="space-y-6" onSubmit={handleSubmit}>
               {/* Team name */}
               <label className="block">
                 <span className="mb-2.5 block text-xs font-semibold uppercase tracking-wider text-text-muted">
-                  Nom de l&apos;équipe
+                  {messages.manage.teamName}
                 </span>
                 <input
                   className="signal-input"
@@ -277,7 +284,7 @@ export default function ManageTeamPage() {
               {/* Player inputs */}
               <div className="space-y-3.5">
                 <div className="flex items-center justify-between gap-3">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-text-muted">Joueurs</p>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-text-muted">{messages.manage.players}</p>
                   <div className="flex gap-2">
                     <button
                       className="ghost-button px-3 py-2 text-xs"
@@ -285,7 +292,7 @@ export default function ManageTeamPage() {
                       disabled={team?.locked || memberNames.length <= MIN_TEAM_MEMBERS}
                       type="button"
                     >
-                      - Retirer
+                      {messages.manage.remove}
                     </button>
                     <button
                       className="ghost-button px-3 py-2 text-xs"
@@ -293,7 +300,7 @@ export default function ManageTeamPage() {
                       disabled={team?.locked || memberNames.length >= MAX_TEAM_MEMBERS}
                       type="button"
                     >
-                      + Ajouter
+                      {messages.manage.add}
                     </button>
                   </div>
                 </div>
@@ -306,19 +313,19 @@ export default function ManageTeamPage() {
                       className="signal-input"
                       value={value}
                       onChange={(event) => handleMemberChange(index, event.target.value)}
-                      placeholder={`Participant ${index + 1}`}
+                      placeholder={formatCopy(messages.manage.participantPlaceholder, { index: index + 1 })}
                       disabled={team?.locked}
                     />
                   </label>
                 ))}
                 <p className="text-xs text-text-faint">
-                  Entre {MIN_TEAM_MEMBERS} et {MAX_TEAM_MEMBERS} joueurs par équipe.
+                  {formatCopy(messages.manage.membersHint, { min: MIN_TEAM_MEMBERS, max: MAX_TEAM_MEMBERS })}
                 </p>
               </div>
 
               {/* Info about relay order */}
               <div className="rounded-xl border border-border bg-elevated/50 px-5 py-4 text-sm leading-relaxed text-text-muted">
-                L&apos;ordre des relais suit la composition actuelle de l&apos;équipe. Modifiez les noms pour réorganiser les rôles.
+                {messages.manage.relayInfo}
               </div>
 
               {/* Success message */}
@@ -355,7 +362,7 @@ export default function ManageTeamPage() {
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
                 )}
-                <span>{saving ? "Enregistrement..." : team?.locked ? "Équipe verrouillée" : "Sauvegarder les modifications"}</span>
+                <span>{saving ? messages.manage.saving : team?.locked ? messages.manage.lockedButton : messages.manage.save}</span>
               </button>
             </form>
           </Panel>
