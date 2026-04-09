@@ -1069,10 +1069,24 @@ export async function applyAdminRoundAction(action: AdminRoundAction): Promise<R
 }
 
 export async function markTeamSubmitted(teamCode: string): Promise<PublicTeam | null> {
+  return setTeamSubmissionState(teamCode, true);
+}
+
+function getStatusAfterSubmissionCancel(round: RoundControlState) {
+  if (round.phase === "relay" || (round.phase === "paused" && round.previousPhase === "relay")) {
+    return PrismaTeamStatus.CODING;
+  }
+
+  return PrismaTeamStatus.READY;
+}
+
+export async function setTeamSubmissionState(teamCode: string, submitted: boolean): Promise<PublicTeam | null> {
   return prisma.$transaction(async (tx) => {
     const currentRound = await ensureCurrentRound(tx);
 
-    if (!canAdminMarkSubmission(toRoundState(currentRound))) {
+    const roundState = toRoundState(currentRound);
+
+    if (submitted && !canAdminMarkSubmission(roundState)) {
       throw new Error("La soumission ne peut etre marquee que pendant ou apres le relais.");
     }
 
@@ -1080,6 +1094,30 @@ export async function markTeamSubmitted(teamCode: string): Promise<PublicTeam | 
 
     if (!entry) {
       return null;
+    }
+
+    if (!submitted) {
+      if (entry.status === PrismaTeamStatus.SCORED) {
+        throw new Error("Une equipe corrigee ne peut pas repasser en attente de soumission.");
+      }
+
+      if (!entry.submittedAt) {
+        return toPublicTeam(entry);
+      }
+
+      const revertedEntry = await tx.roundEntry.update({
+        where: {
+          id: entry.id
+        },
+        data: {
+          submittedAt: null,
+          status: getStatusAfterSubmissionCancel(roundState),
+          locked: false
+        },
+        include: ROUND_ENTRY_INCLUDE
+      });
+
+      return toPublicTeam(revertedEntry);
     }
 
     const updatedEntry = await tx.roundEntry.update({
@@ -1090,6 +1128,36 @@ export async function markTeamSubmitted(teamCode: string): Promise<PublicTeam | 
         submittedAt: entry.submittedAt ?? new Date(),
         locked: true,
         ...(entry.status === PrismaTeamStatus.SCORED ? {} : { status: PrismaTeamStatus.SUBMITTED })
+      },
+      include: ROUND_ENTRY_INCLUDE
+    });
+
+    return toPublicTeam(updatedEntry);
+  });
+}
+
+export async function setTeamLockState(teamCode: string, locked: boolean): Promise<PublicTeam | null> {
+  return prisma.$transaction(async (tx) => {
+    const entry = await findCurrentEntryByTeamCode(tx, teamCode);
+
+    if (!entry) {
+      return null;
+    }
+
+    if (!locked && (entry.status === PrismaTeamStatus.SUBMITTED || entry.status === PrismaTeamStatus.SCORED)) {
+      throw new Error("Une equipe soumise ou corrigee ne peut pas etre deverrouillee.");
+    }
+
+    if (entry.locked === locked) {
+      return toPublicTeam(entry);
+    }
+
+    const updatedEntry = await tx.roundEntry.update({
+      where: {
+        id: entry.id
+      },
+      data: {
+        locked
       },
       include: ROUND_ENTRY_INCLUDE
     });

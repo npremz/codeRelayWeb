@@ -381,6 +381,7 @@ export function buildLiveTeams(seeds: TeamSeed[], state: RelayState, locale: Loc
 
     return {
       ...team,
+      locked: "locked" in team ? Boolean(team.locked) : false,
       status: computedStatus,
       activeMember,
       roundScore,

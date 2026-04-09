@@ -24,6 +24,7 @@ export function AppFrame({ title, subtitle, children, currentRound, navigation =
   const pathname = usePathname();
   const { messages } = useLocale();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const isStaffNavigation = navigation === "staff";
   const publicLinks = [
     { href: "/", label: messages.nav.home, icon: <Home size={16} /> },
     { href: "/register", label: messages.nav.register, icon: <UserPlus size={16} /> },
@@ -39,12 +40,22 @@ export function AppFrame({ title, subtitle, children, currentRound, navigation =
   const judgeLinks = [
     { href: "/judge", label: messages.nav.judge, icon: <Star size={16} /> }
   ];
-  const links = navigation === "staff"
+  const links = isStaffNavigation
     ? [
         ...publicLinks,
         ...(staffRole === "admin" ? adminLinks : judgeLinks)
       ]
     : publicLinks;
+  const mobileStaffLinks = staffRole === "admin"
+    ? [
+        { href: "/admin", label: "Pilotage", icon: <Settings size={18} /> },
+        { href: "/judge", label: messages.nav.judge, icon: <Star size={18} /> },
+        { href: "/tv", label: messages.nav.tv, icon: <Tv size={18} /> }
+      ]
+    : [
+        { href: "/judge", label: messages.nav.judge, icon: <Star size={18} /> },
+        { href: "/tv", label: messages.nav.tv, icon: <Tv size={18} /> }
+      ];
 
   // Close mobile menu when navigating
   useEffect(() => {
@@ -53,7 +64,7 @@ export function AppFrame({ title, subtitle, children, currentRound, navigation =
 
   // Prevent scrolling when mobile menu is open
   useEffect(() => {
-    if (isMobileMenuOpen) {
+    if (isMobileMenuOpen && !isStaffNavigation) {
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "unset";
@@ -61,14 +72,14 @@ export function AppFrame({ title, subtitle, children, currentRound, navigation =
     return () => {
       document.body.style.overflow = "unset";
     };
-  }, [isMobileMenuOpen]);
+  }, [isMobileMenuOpen, isStaffNavigation]);
 
   return (
     <div className="min-h-screen bg-void text-text">
       {/* Ambient top glow */}
       <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(ellipse_at_top,rgba(108,92,231,0.06),transparent_55%)]" />
 
-      <div className="relative mx-auto flex min-h-screen w-full max-w-[1480px] flex-col px-5 py-5 md:px-8 md:py-6">
+      <div className={`relative mx-auto flex min-h-screen w-full max-w-[1480px] flex-col px-5 py-5 md:px-8 md:py-6 ${isStaffNavigation ? "pb-28 md:pb-6" : ""}`}>
         {/* Header */}
         <header className="mb-8 flex items-center justify-between">
           {/* Brand + title */}
@@ -80,7 +91,14 @@ export function AppFrame({ title, subtitle, children, currentRound, navigation =
               </svg>
             </div>
             <div>
-              <h1 className="font-display text-lg font-bold tracking-tight text-text md:text-2xl">{title}</h1>
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="font-display text-lg font-bold tracking-tight text-text md:text-2xl">{title}</h1>
+                {isStaffNavigation && currentRound && (
+                  <span className="surface-chip text-accent-light">
+                    {currentRound.name || `Manche ${currentRound.sequence}`}
+                  </span>
+                )}
+              </div>
               <p className="text-xs text-text-muted md:text-sm">{subtitle}</p>
             </div>
           </div>
@@ -133,26 +151,31 @@ export function AppFrame({ title, subtitle, children, currentRound, navigation =
             <LanguageSwitch />
           </div>
 
-          {/* Hamburger Button - Mobile */}
-          <button
-            className="flex h-10 w-10 items-center justify-center rounded-lg bg-elevated text-text-muted transition-colors hover:bg-border md:hidden"
-            onClick={() => setIsMobileMenuOpen(true)}
-            aria-label={messages.appFrame.openMenu}
-            aria-expanded={isMobileMenuOpen}
-          >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="3" y1="12" x2="21" y2="12"></line>
-              <line x1="3" y1="6" x2="21" y2="6"></line>
-              <line x1="3" y1="18" x2="21" y2="18"></line>
-            </svg>
-          </button>
+          {isStaffNavigation ? (
+            <div className="md:hidden">
+              <LanguageSwitch compact />
+            </div>
+          ) : (
+            <button
+              className="flex h-10 w-10 items-center justify-center rounded-lg bg-elevated text-text-muted transition-colors hover:bg-border md:hidden"
+              onClick={() => setIsMobileMenuOpen(true)}
+              aria-label={messages.appFrame.openMenu}
+              aria-expanded={isMobileMenuOpen}
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="3" y1="12" x2="21" y2="12"></line>
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <line x1="3" y1="18" x2="21" y2="18"></line>
+              </svg>
+            </button>
+          )}
         </header>
 
         <main className="flex-1 animate-fade-in">{children}</main>
       </div>
 
       {/* Mobile Menu Overlay */}
-      {isMobileMenuOpen && (
+      {!isStaffNavigation && isMobileMenuOpen && (
         <div 
           className="fixed inset-0 z-40 bg-void/80 backdrop-blur-sm transition-opacity md:hidden"
           onClick={() => setIsMobileMenuOpen(false)}
@@ -161,6 +184,7 @@ export function AppFrame({ title, subtitle, children, currentRound, navigation =
       )}
 
       {/* Mobile Menu Drawer */}
+      {!isStaffNavigation && (
       <div 
         className={`fixed top-0 right-0 z-50 h-full w-[280px] max-w-[80vw] transform bg-surface border-l border-border p-6 shadow-2xl transition-transform duration-300 ease-in-out md:hidden ${
           isMobileMenuOpen ? "translate-x-0" : "translate-x-full"
@@ -235,6 +259,33 @@ export function AppFrame({ title, subtitle, children, currentRound, navigation =
           })}
         </nav>
       </div>
+      )}
+
+      {isStaffNavigation && (
+        <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-surface/95 px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 shadow-[0_-12px_40px_rgba(15,23,42,0.08)] backdrop-blur-xl md:hidden">
+          <div className="mx-auto flex max-w-[1480px] items-center gap-2">
+            {mobileStaffLinks.map((link) => {
+              const active = pathname === link.href;
+
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`flex min-h-[52px] flex-1 flex-col items-center justify-center gap-1 rounded-2xl border px-3 py-2 text-xs font-bold transition-all ${
+                    active
+                      ? "border-accent/25 bg-accent/10 text-accent-light"
+                      : "border-transparent bg-transparent text-text-faint"
+                  }`}
+                  aria-current={active ? "page" : undefined}
+                >
+                  <span>{link.icon}</span>
+                  <span className="tracking-wide">{link.label}</span>
+                </Link>
+              );
+            })}
+          </div>
+        </nav>
+      )}
     </div>
   );
 }

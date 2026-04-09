@@ -53,6 +53,7 @@ export type PublicTeam = TeamSeed & {
 };
 
 export type LiveTeam = TeamSeed & {
+  locked: boolean;
   activeMember: TeamMember | null;
   roundScore: number;
   totalScore: number;
@@ -175,6 +176,14 @@ export type AdminAssignSubjectInput = {
 
 export type AdminResetEventInput = {
   confirmationText: string;
+};
+
+export type AdminTeamLockInput = {
+  locked: boolean;
+};
+
+export type AdminTeamSubmissionInput = {
+  submitted: boolean;
 };
 
 export type LiveTeamsResponse = {

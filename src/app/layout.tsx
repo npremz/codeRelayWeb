@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Space_Grotesk, JetBrains_Mono } from "next/font/google";
+import { IBM_Plex_Sans, JetBrains_Mono, Space_Grotesk } from "next/font/google";
 import { LocaleProvider } from "@/components/locale-provider";
 import { getRequestLocaleState } from "@/lib/request-locale";
 import "./globals.css";
@@ -10,8 +10,14 @@ const displayFont = Space_Grotesk({
   weight: ["400", "500", "600", "700"]
 });
 
-const bodyFont = JetBrains_Mono({
+const bodyFont = IBM_Plex_Sans({
   variable: "--font-body",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"]
+});
+
+const monoFont = JetBrains_Mono({
+  variable: "--font-mono",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"]
 });
@@ -26,7 +32,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
 
   return (
     <html lang={locale}>
-      <body className={`${displayFont.variable} ${bodyFont.variable} mb-16`}>
+      <body className={`${displayFont.variable} ${bodyFont.variable} ${monoFont.variable} mb-24`}>
         <LocaleProvider initialLocale={locale} initialSource={source}>
           {children}
         </LocaleProvider>

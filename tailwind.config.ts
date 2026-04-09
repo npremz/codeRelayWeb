@@ -4,6 +4,11 @@ const config: Config = {
   content: ["./src/**/*.{js,ts,jsx,tsx,mdx}"],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ["var(--font-body)", "IBM Plex Sans", "system-ui", "sans-serif"],
+        display: ["var(--font-display)", "Space Grotesk", "sans-serif"],
+        mono: ["var(--font-mono)", "JetBrains Mono", "monospace"]
+      },
       colors: {
         void: "var(--color-void)",
         surface: "var(--color-surface)",

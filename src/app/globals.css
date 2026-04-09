@@ -60,9 +60,16 @@ body {
   margin: 0;
   background: var(--color-void);
   color: var(--color-text);
-  font-family: var(--font-body), "JetBrains Mono", monospace, system-ui;
-  font-size: 0.9375rem;
+  font-family: var(--font-body), "IBM Plex Sans", system-ui, sans-serif;
+  font-size: 1rem;
   line-height: 1.6;
+}
+
+code,
+pre,
+kbd,
+samp {
+  font-family: var(--font-mono), "JetBrains Mono", monospace;
 }
 
 a {
@@ -165,6 +172,7 @@ a:focus-visible, button:focus-visible, input:focus-visible {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  min-height: 44px;
   gap: 0.625rem;
   border-radius: var(--radius-lg);
   border: none;
@@ -172,10 +180,9 @@ a:focus-visible, button:focus-visible, input:focus-visible {
   color: #fff;
   padding: 0.875rem 1.75rem;
   font: inherit;
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  letter-spacing: 0.01em;
   cursor: pointer;
   transition: transform 120ms ease, box-shadow 200ms ease, background-color 200ms ease;
 }
@@ -200,6 +207,7 @@ a:focus-visible, button:focus-visible, input:focus-visible {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  min-height: 44px;
   gap: 0.5rem;
   border-radius: var(--radius-lg);
   border: 1px solid var(--color-border);
@@ -207,10 +215,9 @@ a:focus-visible, button:focus-visible, input:focus-visible {
   color: var(--color-text-muted);
   padding: 0.875rem 1.5rem;
   font: inherit;
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  letter-spacing: 0.01em;
   cursor: pointer;
   transition: border-color 200ms ease, color 200ms ease, background-color 200ms ease;
 }
@@ -236,6 +243,54 @@ a:focus-visible, button:focus-visible, input:focus-visible {
   white-space: normal;
   overflow-wrap: anywhere;
   word-break: break-all;
+}
+
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+.segment-button {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  transition: border-color 200ms ease, background-color 200ms ease, color 200ms ease;
+}
+
+.segment-button:hover:not(:disabled) {
+  border-color: var(--color-border-hover);
+  color: var(--color-text);
+}
+
+.segment-button[data-active="true"] {
+  border-color: rgba(108, 92, 231, 0.22);
+  background: rgba(108, 92, 231, 0.1);
+  color: var(--color-accent-light);
+}
+
+.surface-chip {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  padding: 0.625rem 0.875rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
 }
 
 /* ────────────────────────────────────────────────── */
