@@ -18,7 +18,8 @@ export function StaffLoginScreen({ preferredRole, nextPath }: StaffLoginScreenPr
   const [selectedRole, setSelectedRole] = useState<Role>(preferredRole);
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState("");
+  const [codeError, setCodeError] = useState("");
+  const [feedback, setFeedback] = useState<{ tone: "error" | "success"; text: string } | null>(null);
 
   const roleConfig = useMemo(
     () =>
@@ -45,8 +46,16 @@ export function StaffLoginScreen({ preferredRole, nextPath }: StaffLoginScreenPr
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    if (!code.trim()) {
+      setCodeError(locale === "en" ? "Enter the access code." : "Renseigne le code d'acces.");
+      setFeedback(null);
+      return;
+    }
+
     setBusy(true);
-    setMessage("");
+    setCodeError("");
+    setFeedback(null);
 
     try {
       const response = await fetch("/api/staff/session", {
@@ -69,7 +78,10 @@ export function StaffLoginScreen({ preferredRole, nextPath }: StaffLoginScreenPr
 
       window.location.href = payload.redirectPath;
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : (locale === "en" ? "Unable to sign in to staff." : "Connexion staff impossible."));
+      setFeedback({
+        tone: "error",
+        text: error instanceof Error ? error.message : (locale === "en" ? "Unable to sign in to staff." : "Connexion staff impossible.")
+      });
     } finally {
       setBusy(false);
     }
@@ -77,14 +89,18 @@ export function StaffLoginScreen({ preferredRole, nextPath }: StaffLoginScreenPr
 
   async function handleLogout() {
     setBusy(true);
-    setMessage("");
+    setCodeError("");
+    setFeedback(null);
 
     try {
       await fetch("/api/staff/session", { method: "DELETE" });
       setCode("");
-      setMessage(messages.staff.signedOut);
+      setFeedback({ tone: "success", text: messages.staff.signedOut });
     } catch {
-      setMessage(locale === "en" ? "Unable to close the session." : "Impossible de fermer la session.");
+      setFeedback({
+        tone: "error",
+        text: locale === "en" ? "Unable to close the session." : "Impossible de fermer la session."
+      });
     } finally {
       setBusy(false);
     }
@@ -147,26 +163,40 @@ export function StaffLoginScreen({ preferredRole, nextPath }: StaffLoginScreenPr
               <input
                 className="signal-input"
                 type="password"
+                id="staff-access-code"
                 value={code}
-                onChange={(event) => setCode(event.target.value)}
+                onChange={(event) => {
+                  setCode(event.target.value);
+                  setCodeError("");
+                  if (feedback?.tone === "error") {
+                    setFeedback(null);
+                  }
+                }}
                 placeholder={messages.staff.codePlaceholder}
+                aria-describedby={codeError ? "staff-access-code-error" : undefined}
+                aria-invalid={codeError ? "true" : "false"}
               />
+              {codeError && (
+                <p id="staff-access-code-error" className="mt-2 text-sm text-hot">
+                  {codeError}
+                </p>
+              )}
             </label>
 
             {/* Feedback message */}
-            {message && (
+            {feedback && (
               <div className={`rounded-xl border px-4 py-3 text-sm ${
-                message.includes("impossible") || message.includes("invalide")
+                feedback.tone === "error"
                   ? "border-hot/20 bg-hot/5 text-hot"
                   : "border-success/20 bg-success/5 text-success"
               }`}>
-                {message}
+                {feedback.text}
               </div>
             )}
 
             {/* Action buttons */}
             <div className="flex gap-3">
-              <button className="signal-button flex-1" type="submit" disabled={busy || code.trim().length === 0}>
+              <button className="signal-button flex-1" type="submit" disabled={busy}>
                 {busy ? messages.staff.signingIn : messages.staff.signIn}
               </button>
               <button className="ghost-button" onClick={handleLogout} type="button" disabled={busy}>

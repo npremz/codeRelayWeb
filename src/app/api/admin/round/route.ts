@@ -1,13 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { AdminRoundAction } from "@/lib/game-types";
+import { parseJsonBody, roundActionInputSchema } from "@/lib/input-validation";
 import { getStaffSession } from "@/lib/staff-auth";
 import { applyAdminRoundAction, getCurrentRoundSummary, getRoundState } from "@/lib/team-store";
 
 export const dynamic = "force-dynamic";
-
-type RoundActionBody = {
-  action?: AdminRoundAction;
-};
 
 async function requireAdmin() {
   const session = await getStaffSession();
@@ -30,12 +26,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const body = (await request.json()) as RoundActionBody;
-
-    if (!body.action) {
-      return NextResponse.json({ error: "Action admin manquante." }, { status: 400 });
-    }
-
+    const body = await parseJsonBody(request, roundActionInputSchema);
     const round = await applyAdminRoundAction(body.action);
     const currentRound = await getCurrentRoundSummary();
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { AdminCreateRoundInput } from "@/lib/game-types";
+import { createRoundInputSchema, parseJsonBody } from "@/lib/input-validation";
 import { getStaffSession } from "@/lib/staff-auth";
 import { createRound, getCurrentRoundSummary, listRounds } from "@/lib/team-store";
 
@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const body = (await request.json()) as AdminCreateRoundInput;
+    const body = await parseJsonBody(request, createRoundInputSchema);
     const round = await createRound(body);
     const [rounds, currentRound] = await Promise.all([listRounds(), getCurrentRoundSummary()]);
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { AdminResetEventInput } from "@/lib/game-types";
+import { parseJsonBody, resetEventInputSchema } from "@/lib/input-validation";
 import { getStaffSession } from "@/lib/staff-auth";
 import { getRoundState, listRounds, resetEventData } from "@/lib/team-store";
 
@@ -16,7 +16,7 @@ export async function DELETE(request: NextRequest) {
   }
 
   try {
-    const body = (await request.json()) as AdminResetEventInput;
+    const body = await parseJsonBody(request, resetEventInputSchema);
     const currentRound = await resetEventData(body);
     const [round, rounds] = await Promise.all([getRoundState(), listRounds()]);
 

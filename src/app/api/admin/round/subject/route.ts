@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { AdminAssignSubjectInput } from "@/lib/game-types";
+import { assignRoundSubjectInputSchema, parseJsonBody } from "@/lib/input-validation";
 import { getStaffSession } from "@/lib/staff-auth";
 import { assignRoundSubject, getCurrentRoundSummary, getRoundState, listRounds } from "@/lib/team-store";
 
@@ -17,7 +17,7 @@ export async function PUT(request: NextRequest) {
   }
 
   try {
-    const body = (await request.json()) as AdminAssignSubjectInput;
+    const body = await parseJsonBody(request, assignRoundSubjectInputSchema);
     const currentRound = await assignRoundSubject(body);
     const [round, rounds] = await Promise.all([getRoundState(), listRounds()]);
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { AdminSelectRoundInput } from "@/lib/game-types";
+import { parseJsonBody, selectRoundInputSchema } from "@/lib/input-validation";
 import { getStaffSession } from "@/lib/staff-auth";
 import { getRoundState, listRounds, setCurrentRound } from "@/lib/team-store";
 
@@ -16,12 +16,7 @@ export async function PUT(request: NextRequest) {
   }
 
   try {
-    const body = (await request.json()) as AdminSelectRoundInput;
-
-    if (!body.roundId) {
-      return NextResponse.json({ error: "roundId manquant." }, { status: 400 });
-    }
-
+    const body = await parseJsonBody(request, selectRoundInputSchema);
     const currentRound = await setCurrentRound(body);
     const [round, rounds] = await Promise.all([getRoundState(), listRounds()]);
 

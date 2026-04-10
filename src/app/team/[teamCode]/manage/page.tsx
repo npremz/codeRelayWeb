@@ -6,9 +6,10 @@ import { Panel } from "@/components/panel";
 import { MAX_TEAM_MEMBERS, MIN_TEAM_MEMBERS, PublicTeam, RELAY_SEAT_LABELS } from "@/lib/game-types";
 import { formatCopy, getDateTimeLocale } from "@/lib/locale";
 import { getStoredToken, storeTeamAccess } from "@/lib/team-access";
+import { getEmptyTeamFormErrors, hasTeamFormErrors, validateTeamForm } from "@/lib/team-form-validation";
 import { useLiveTeams } from "@/lib/use-live-teams";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 
 const DEFAULT_MEMBER_NAMES = ["", "", "", ""];
 const RELAY_COLORS = [
@@ -40,6 +41,9 @@ export default function ManageTeamPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [fieldErrors, setFieldErrors] = useState(getEmptyTeamFormErrors);
+  const validationMessage =
+    locale === "en" ? "Check the highlighted fields." : "Corrige les champs en surbrillance.";
 
   useEffect(() => {
     const nextToken = queryToken ?? getStoredToken(teamCode);
@@ -89,6 +93,7 @@ export default function ManageTeamPage() {
           setTeam(payload.team);
           setTeamName(payload.team.name);
           setMemberNames(payload.team.members.map((member) => member.name));
+          setFieldErrors(getEmptyTeamFormErrors());
         }
       } catch (nextError) {
         if (!cancelled) {
@@ -108,25 +113,26 @@ export default function ManageTeamPage() {
     };
   }, [teamCode, token]);
 
-  const canSubmit = useMemo(
-    () =>
-      teamName.trim().length > 1 &&
-      memberNames.length >= MIN_TEAM_MEMBERS &&
-      memberNames.length <= MAX_TEAM_MEMBERS &&
-      memberNames.every((name) => name.trim().length > 1),
-    [memberNames, teamName]
-  );
-
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (!token || !canSubmit) {
+    if (!token || team?.locked) {
+      return;
+    }
+
+    const nextFieldErrors = validateTeamForm(teamName, memberNames, locale);
+
+    if (hasTeamFormErrors(nextFieldErrors)) {
+      setFieldErrors(nextFieldErrors);
+      setError(validationMessage);
+      setMessage("");
       return;
     }
 
     setSaving(true);
     setError("");
     setMessage("");
+    setFieldErrors(getEmptyTeamFormErrors());
 
     try {
       const response = await fetch(`/api/teams/${teamCode}`, {
@@ -158,18 +164,39 @@ export default function ManageTeamPage() {
 
   function handleMemberChange(index: number, value: string) {
     setMemberNames((current) => current.map((entry, currentIndex) => (currentIndex === index ? value : entry)));
+    setFieldErrors((current) => ({
+      ...current,
+      members: current.members.map((entry, currentIndex) => (currentIndex === index ? undefined : entry))
+    }));
+    if (error === validationMessage) {
+      setError("");
+    }
   }
 
   function addMember() {
     setMemberNames((current) =>
       current.length < MAX_TEAM_MEMBERS ? [...current, ""] : current
     );
+    setFieldErrors((current) => ({
+      ...current,
+      members: [...current.members, undefined]
+    }));
+    if (error === validationMessage) {
+      setError("");
+    }
   }
 
   function removeMember() {
     setMemberNames((current) =>
       current.length > MIN_TEAM_MEMBERS ? current.slice(0, -1) : current
     );
+    setFieldErrors((current) => ({
+      ...current,
+      members: current.members.slice(0, -1)
+    }));
+    if (error === validationMessage) {
+      setError("");
+    }
   }
 
   return (
@@ -274,11 +301,25 @@ export default function ManageTeamPage() {
                 </span>
                 <input
                   className="signal-input"
+                  id="manage-team-name"
                   value={teamName}
-                  onChange={(event) => setTeamName(event.target.value)}
+                  onChange={(event) => {
+                    setTeamName(event.target.value);
+                    setFieldErrors((current) => ({ ...current, teamName: undefined }));
+                    if (error === validationMessage) {
+                      setError("");
+                    }
+                  }}
                   placeholder="Ex: Heap Hustlers"
                   disabled={team?.locked}
+                  aria-describedby={fieldErrors.teamName ? "manage-team-name-error" : undefined}
+                  aria-invalid={fieldErrors.teamName ? "true" : "false"}
                 />
+                {fieldErrors.teamName && (
+                  <p id="manage-team-name-error" className="mt-2 text-sm text-hot">
+                    {fieldErrors.teamName}
+                  </p>
+                )}
               </label>
 
               {/* Player inputs */}
@@ -311,13 +352,23 @@ export default function ManageTeamPage() {
                     </div>
                     <input
                       className="signal-input"
+                      id={`manage-member-${index}`}
                       value={value}
                       onChange={(event) => handleMemberChange(index, event.target.value)}
                       placeholder={formatCopy(messages.manage.participantPlaceholder, { index: index + 1 })}
                       disabled={team?.locked}
+                      aria-describedby={fieldErrors.members[index] ? `manage-member-${index}-error` : undefined}
+                      aria-invalid={fieldErrors.members[index] ? "true" : "false"}
                     />
                   </label>
                 ))}
+                {fieldErrors.members.map((memberError, index) =>
+                  memberError ? (
+                    <p key={`manage-member-error-${index}`} id={`manage-member-${index}-error`} className="-mt-1 text-sm text-hot">
+                      {memberError}
+                    </p>
+                  ) : null
+                )}
                 <p className="text-xs text-text-faint">
                   {formatCopy(messages.manage.membersHint, { min: MIN_TEAM_MEMBERS, max: MAX_TEAM_MEMBERS })}
                 </p>
@@ -354,7 +405,7 @@ export default function ManageTeamPage() {
               <button
                 className="signal-button w-full relative"
                 type="submit"
-                disabled={!canSubmit || saving || team?.locked}
+                disabled={saving || team?.locked || !team}
               >
                 {saving && (
                   <svg className="absolute left-4 h-5 w-5 animate-spin text-white/70" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">

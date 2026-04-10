@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { AdminTeamSubmissionInput } from "@/lib/game-types";
+import { parseJsonBody, parseValue, teamCodeSchema, teamSubmissionInputSchema } from "@/lib/input-validation";
 import { getStaffSession } from "@/lib/staff-auth";
 import { markTeamSubmitted, setTeamSubmissionState } from "@/lib/team-store";
 
@@ -22,7 +22,8 @@ export async function POST(_request: NextRequest, context: Context) {
   }
 
   try {
-    const { teamCode } = await context.params;
+    const { teamCode: rawTeamCode } = await context.params;
+    const teamCode = parseValue(rawTeamCode, teamCodeSchema);
     const team = await markTeamSubmitted(teamCode);
 
     if (!team) {
@@ -44,13 +45,9 @@ export async function PUT(request: NextRequest, context: Context) {
   }
 
   try {
-    const body = (await request.json()) as AdminTeamSubmissionInput;
-
-    if (typeof body.submitted !== "boolean") {
-      return NextResponse.json({ error: "Etat de soumission manquant." }, { status: 400 });
-    }
-
-    const { teamCode } = await context.params;
+    const { teamCode: rawTeamCode } = await context.params;
+    const teamCode = parseValue(rawTeamCode, teamCodeSchema);
+    const body = await parseJsonBody(request, teamSubmissionInputSchema);
     const team = await setTeamSubmissionState(teamCode, body.submitted);
 
     if (!team) {

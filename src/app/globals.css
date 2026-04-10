@@ -159,6 +159,16 @@ a:focus-visible, button:focus-visible, input:focus-visible {
   box-shadow: 0 0 0 3px var(--color-accent-glow);
 }
 
+.signal-input[aria-invalid="true"] {
+  border-color: rgba(220, 38, 38, 0.45);
+  background: rgba(220, 38, 38, 0.05);
+}
+
+.signal-input[aria-invalid="true"]:focus {
+  border-color: var(--color-hot);
+  box-shadow: 0 0 0 3px var(--color-hot-glow);
+}
+
 .signal-input:disabled {
   opacity: 0.5;
   cursor: not-allowed;

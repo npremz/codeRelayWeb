@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { AdminTeamLockInput } from "@/lib/game-types";
+import { parseJsonBody, parseValue, teamCodeSchema, teamLockInputSchema } from "@/lib/input-validation";
 import { getStaffSession } from "@/lib/staff-auth";
 import { setTeamLockState } from "@/lib/team-store";
 
@@ -22,13 +22,9 @@ export async function PUT(request: NextRequest, context: Context) {
   }
 
   try {
-    const body = (await request.json()) as AdminTeamLockInput;
-
-    if (typeof body.locked !== "boolean") {
-      return NextResponse.json({ error: "Etat de verrouillage manquant." }, { status: 400 });
-    }
-
-    const { teamCode } = await context.params;
+    const { teamCode: rawTeamCode } = await context.params;
+    const teamCode = parseValue(rawTeamCode, teamCodeSchema);
+    const body = await parseJsonBody(request, teamLockInputSchema);
     const team = await setTeamLockState(teamCode, body.locked);
 
     if (!team) {

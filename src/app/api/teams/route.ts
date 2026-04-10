@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createTeam, listStoredTeams } from "@/lib/team-store";
-import { TeamCreateInput } from "@/lib/game-types";
+import { parseJsonBody, teamCreateInputSchema } from "@/lib/input-validation";
 import { translatePublicErrorMessage } from "@/lib/locale";
 import { getLocaleFromRequest } from "@/lib/request-locale";
 
@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
   const locale = getLocaleFromRequest(request);
 
   try {
-    const body = (await request.json()) as TeamCreateInput;
+    const body = await parseJsonBody(request, teamCreateInputSchema);
     const created = await createTeam(body);
     return NextResponse.json(created, { status: 201 });
   } catch (error) {

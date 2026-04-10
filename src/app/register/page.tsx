@@ -7,8 +7,9 @@ import { Panel } from "@/components/panel";
 import { getStoredTeamAccess, storeTeamAccess } from "@/lib/team-access";
 import { MAX_TEAM_MEMBERS, MIN_TEAM_MEMBERS, RELAY_SEAT_LABELS, TeamCreateResponse } from "@/lib/game-types";
 import { formatCopy, getDateTimeLocale } from "@/lib/locale";
+import { getEmptyTeamFormErrors, hasTeamFormErrors, validateTeamForm } from "@/lib/team-form-validation";
 import { useLiveTeams } from "@/lib/use-live-teams";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { Key, Users } from "lucide-react";
 
 const DEFAULT_MEMBER_NAMES = ["", "", "", ""];
@@ -31,27 +32,24 @@ export default function RegisterPage() {
   const [myTeamCodes, setMyTeamCodes] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState(getEmptyTeamFormErrors);
   const [createdTeam, setCreatedTeam] = useState<TeamCreateResponse | null>(null);
   const { teams, round, currentRound, refresh } = useLiveTeams();
+  const validationMessage =
+    locale === "en" ? "Check the highlighted fields before continuing." : "Corrige les champs en erreur avant de continuer.";
 
   useEffect(() => {
     setMyTeamCodes(Object.keys(getStoredTeamAccess()));
   }, []);
 
-  const canSubmit = useMemo(
-    () =>
-      round.registrationOpen &&
-      teamName.trim().length > 1 &&
-      memberNames.length >= MIN_TEAM_MEMBERS &&
-      memberNames.length <= MAX_TEAM_MEMBERS &&
-      memberNames.every((name) => name.trim().length > 1),
-    [memberNames, round.registrationOpen, teamName]
-  );
-
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (!canSubmit) {
+    const nextFieldErrors = validateTeamForm(teamName, memberNames, locale);
+
+    if (hasTeamFormErrors(nextFieldErrors)) {
+      setFieldErrors(nextFieldErrors);
+      setError(validationMessage);
       return;
     }
 
@@ -82,6 +80,7 @@ export default function RegisterPage() {
       await refresh();
       setTeamName("");
       setMemberNames(DEFAULT_MEMBER_NAMES);
+      setFieldErrors(getEmptyTeamFormErrors());
     } catch (nextError) {
       setError(nextError instanceof Error ? nextError.message : (locale === "en" ? "Unable to create the team." : "Impossible de créer l'équipe."));
     } finally {
@@ -89,20 +88,53 @@ export default function RegisterPage() {
     }
   }
 
+  function handleTeamNameChange(value: string) {
+    setTeamName(value);
+
+    if (error === validationMessage) {
+      setError("");
+    }
+
+    if (fieldErrors.teamName) {
+      setFieldErrors((current) => ({
+        ...current,
+        teamName: validateTeamForm(value, memberNames, locale).teamName
+      }));
+    }
+  }
+
   function handleMemberChange(index: number, value: string) {
-    setMemberNames((current) => current.map((name, currentIndex) => (currentIndex === index ? value : name)));
+    const nextMembers = memberNames.map((name, currentIndex) => (currentIndex === index ? value : name));
+    setMemberNames(nextMembers);
+
+    if (error === validationMessage) {
+      setError("");
+    }
+
+    if (fieldErrors.members[index]) {
+      setFieldErrors((current) => ({
+        ...current,
+        members: validateTeamForm(teamName, nextMembers, locale).members
+      }));
+    }
   }
 
   function addMember() {
-    setMemberNames((current) =>
-      current.length < MAX_TEAM_MEMBERS ? [...current, ""] : current
-    );
+    const nextMembers = memberNames.length < MAX_TEAM_MEMBERS ? [...memberNames, ""] : memberNames;
+    setMemberNames(nextMembers);
+
+    if (hasTeamFormErrors(fieldErrors)) {
+      setFieldErrors(validateTeamForm(teamName, nextMembers, locale));
+    }
   }
 
   function removeMember() {
-    setMemberNames((current) =>
-      current.length > MIN_TEAM_MEMBERS ? current.slice(0, -1) : current
-    );
+    const nextMembers = memberNames.length > MIN_TEAM_MEMBERS ? memberNames.slice(0, -1) : memberNames;
+    setMemberNames(nextMembers);
+
+    if (hasTeamFormErrors(fieldErrors)) {
+      setFieldErrors(validateTeamForm(teamName, nextMembers, locale));
+    }
   }
 
   const myTeams = teams.filter((team) => myTeamCodes.includes(team.teamCode));
@@ -126,9 +158,16 @@ export default function RegisterPage() {
                 <input
                   className="signal-input"
                   value={teamName}
-                  onChange={(event) => setTeamName(event.target.value)}
+                  onChange={(event) => handleTeamNameChange(event.target.value)}
                   placeholder="Ex: Heap Hustlers"
+                  aria-invalid={Boolean(fieldErrors.teamName)}
+                  aria-describedby={fieldErrors.teamName ? "register-team-name-error" : undefined}
                 />
+                {fieldErrors.teamName && (
+                  <p className="mt-2 text-sm text-hot" id="register-team-name-error">
+                    {fieldErrors.teamName}
+                  </p>
+                )}
               </label>
 
               {/* Player inputs */}
@@ -164,9 +203,18 @@ export default function RegisterPage() {
                       value={value}
                       onChange={(event) => handleMemberChange(index, event.target.value)}
                       placeholder={MEMBER_PLACEHOLDERS[index] ?? `Participant ${index + 1}`}
+                      aria-invalid={Boolean(fieldErrors.members[index])}
+                      aria-describedby={fieldErrors.members[index] ? `register-member-${index}-error` : undefined}
                     />
                   </label>
                 ))}
+                {memberNames.map((_, index) =>
+                  fieldErrors.members[index] ? (
+                    <p className="text-sm text-hot" id={`register-member-${index}-error`} key={`member-error-${index}`}>
+                      {fieldErrors.members[index]}
+                    </p>
+                  ) : null
+                )}
                 <p className="text-xs text-text-faint">
                   {formatCopy(messages.register.membersHint, { min: MIN_TEAM_MEMBERS, max: MAX_TEAM_MEMBERS })}
                 </p>
@@ -202,7 +250,7 @@ export default function RegisterPage() {
               )}
 
               {/* Submit */}
-              <button className="signal-button w-full relative" type="submit" disabled={!canSubmit || submitting}>
+              <button className="signal-button w-full relative" type="submit" disabled={submitting || !round.registrationOpen}>
                 {submitting && (
                   <svg className="absolute left-4 h-5 w-5 animate-spin text-white/70" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
