@@ -45,7 +45,7 @@ export function useRoundNotifications(state: RelayState, locale: Locale = DEFAUL
     const previousState = previousStateRef.current;
     const warningKey = `${state.phase}-${state.currentSlice}`;
 
-    if (state.isRunning && state.remainingMs > 0 && state.remainingMs <= WARNING_THRESHOLD_MS) {
+    if (state.isRunning && !state.isTransition && state.remainingMs > 0 && state.remainingMs <= WARNING_THRESHOLD_MS) {
       if (warningKeyRef.current !== warningKey) {
         showNotification({
           tone: "signal",
@@ -106,13 +106,21 @@ export function useRoundNotifications(state: RelayState, locale: Locale = DEFAUL
             : "Fin du codage. Le jury peut finaliser l'évaluation."
         });
       }
+    } else if (state.phase === "relay" && !previousState.isTransition && state.isTransition) {
+      showNotification({
+        tone: "signal",
+        title: locale === "en" ? "Switch seats" : "Changement de place",
+        message: locale === "en"
+          ? "You have 10 seconds to rotate players before the next relay."
+          : "Vous avez 10 secondes pour changer de place avant le relais suivant."
+      });
     } else if (state.phase === "relay" && previousState.currentSlice !== state.currentSlice) {
       showNotification({
         tone: "signal",
         title: locale === "en" ? "Rotation" : "Rotation",
         message: locale === "en"
-          ? "Turn over. Rotate players at the keyboard."
-          : "Fin de tranche. Rotation des joueurs au clavier."
+          ? "Next relay started. The next player is now at the keyboard."
+          : "Le relais suivant a commencé. Le joueur suivant est maintenant au clavier."
       });
     }
 
@@ -120,6 +128,7 @@ export function useRoundNotifications(state: RelayState, locale: Locale = DEFAUL
   }, [
     state.activeRelayOrder,
     state.currentSlice,
+    state.isTransition,
     state.isRunning,
     locale,
     state.phase,

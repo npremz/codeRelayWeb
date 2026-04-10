@@ -14,6 +14,7 @@ type RankComparableTeam = Pick<LiveTeam, "totalScore" | "scoreCard" | "submissio
 export const REFLECTION_MS = 5 * 60 * 1000;
 export const RELAY_SLICE_MS = 2 * 60 * 1000;
 export const RELAY_SLICES = 8;
+export const RELAY_HANDOFF_MS = 10 * 1000;
 
 export const defaultRoundState: RoundControlState = {
   registrationOpen: true,
@@ -154,6 +155,14 @@ function getRelayPhaseLabel(locale: Locale, paused: boolean) {
   return locale === "en" ? "Relay coding" : "Codage relais";
 }
 
+function getRelayHandoffLabel(locale: Locale, paused: boolean) {
+  if (paused) {
+    return locale === "en" ? "Paused during handoff" : "Pause pendant changement";
+  }
+
+  return locale === "en" ? "Seat change" : "Changement de place";
+}
+
 function getActiveRelayOrderForTeam(memberCount: number, currentSlice: number) {
   if (memberCount <= 0) {
     return null;
@@ -198,7 +207,8 @@ export function canAdminMarkSubmission(round: RoundControlState): boolean {
 
 export function getRelayState(round: RoundControlState, now = Date.now(), locale: Locale = DEFAULT_LOCALE): RelayState {
   const reflectionMs = round.reflectionMs;
-  const relayTotalMs = round.relaySliceMs * round.totalRelaySlices;
+  const relayHandoffCount = Math.max(round.totalRelaySlices - 1, 0);
+  const relayTotalMs = round.relaySliceMs * round.totalRelaySlices + RELAY_HANDOFF_MS * relayHandoffCount;
 
   if (round.phase === "draft") {
     return {
@@ -208,6 +218,7 @@ export function getRelayState(round: RoundControlState, now = Date.now(), locale
       totalMs: reflectionMs,
       currentSlice: 0,
       activeRelayOrder: null,
+      isTransition: false,
       phaseLabel: getDraftPhaseLabel(locale, round.registrationOpen),
       progress: 0,
       isRunning: false
@@ -222,6 +233,7 @@ export function getRelayState(round: RoundControlState, now = Date.now(), locale
       totalMs: relayTotalMs,
       currentSlice: Math.max(round.totalRelaySlices - 1, 0),
       activeRelayOrder: null,
+      isTransition: false,
       phaseLabel: locale === "en" ? "Round complete" : "Manche terminée",
       progress: 100,
       isRunning: false
@@ -243,6 +255,7 @@ export function getRelayState(round: RoundControlState, now = Date.now(), locale
       totalMs: reflectionMs,
       currentSlice: 0,
       activeRelayOrder: null,
+      isTransition: false,
       phaseLabel: getReflectionPhaseLabel(locale, round.phase === "paused"),
       progress: reflectionMs === 0 ? 0 : Math.round((boundedElapsedMs / reflectionMs) * 100),
       isRunning: round.phase !== "paused"
@@ -250,19 +263,71 @@ export function getRelayState(round: RoundControlState, now = Date.now(), locale
   }
 
   const boundedElapsedMs = Math.min(elapsedMs, relayTotalMs);
-  const currentSlice = Math.min(
-    Math.floor(boundedElapsedMs / round.relaySliceMs),
-    Math.max(round.totalRelaySlices - 1, 0)
-  );
-  const sliceElapsedMs = boundedElapsedMs % round.relaySliceMs;
+  const lastSliceIndex = Math.max(round.totalRelaySlices - 1, 0);
+
+  if (round.totalRelaySlices <= 0) {
+    return {
+      phase: round.phase,
+      elapsedMs: boundedElapsedMs,
+      remainingMs: 0,
+      totalMs: relayTotalMs,
+      currentSlice: 0,
+      activeRelayOrder: null,
+      isTransition: false,
+      phaseLabel: getRelayPhaseLabel(locale, round.phase === "paused"),
+      progress: 100,
+      isRunning: round.phase !== "paused"
+    };
+  }
+
+  let segmentStartMs = 0;
+
+  for (let sliceIndex = 0; sliceIndex < round.totalRelaySlices; sliceIndex += 1) {
+    const sliceEndMs = segmentStartMs + round.relaySliceMs;
+
+    if (boundedElapsedMs < sliceEndMs || sliceIndex === lastSliceIndex) {
+      return {
+        phase: round.phase,
+        elapsedMs: boundedElapsedMs,
+        remainingMs: Math.max(sliceEndMs - boundedElapsedMs, 0),
+        totalMs: relayTotalMs,
+        currentSlice: sliceIndex,
+        activeRelayOrder: sliceIndex + 1,
+        isTransition: false,
+        phaseLabel: getRelayPhaseLabel(locale, round.phase === "paused"),
+        progress: relayTotalMs === 0 ? 0 : Math.round((boundedElapsedMs / relayTotalMs) * 100),
+        isRunning: round.phase !== "paused"
+      };
+    }
+
+    const handoffEndMs = sliceEndMs + RELAY_HANDOFF_MS;
+
+    if (boundedElapsedMs < handoffEndMs) {
+      return {
+        phase: round.phase,
+        elapsedMs: boundedElapsedMs,
+        remainingMs: Math.max(handoffEndMs - boundedElapsedMs, 0),
+        totalMs: relayTotalMs,
+        currentSlice: sliceIndex,
+        activeRelayOrder: null,
+        isTransition: true,
+        phaseLabel: getRelayHandoffLabel(locale, round.phase === "paused"),
+        progress: relayTotalMs === 0 ? 0 : Math.round((boundedElapsedMs / relayTotalMs) * 100),
+        isRunning: round.phase !== "paused"
+      };
+    }
+
+    segmentStartMs = handoffEndMs;
+  }
 
   return {
     phase: round.phase,
     elapsedMs: boundedElapsedMs,
-    remainingMs: Math.max(round.relaySliceMs - sliceElapsedMs, 0),
+    remainingMs: 0,
     totalMs: relayTotalMs,
-    currentSlice,
-    activeRelayOrder: currentSlice + 1,
+    currentSlice: lastSliceIndex,
+    activeRelayOrder: round.totalRelaySlices,
+    isTransition: false,
     phaseLabel: getRelayPhaseLabel(locale, round.phase === "paused"),
     progress: relayTotalMs === 0 ? 0 : Math.round((boundedElapsedMs / relayTotalMs) * 100),
     isRunning: round.phase !== "paused"
@@ -351,7 +416,7 @@ export function buildLiveTeams(seeds: TeamSeed[], state: RelayState, locale: Loc
     const submissionOrder = submissionIndex >= 0 ? submissionIndex + 1 : null;
     const activeRelayOrder = getActiveRelayOrderForTeam(team.members.length, state.currentSlice);
     const activeMember =
-      (state.phase === "relay" || (state.phase === "paused" && state.activeRelayOrder !== null)) && submissionOrder === null
+      state.activeRelayOrder !== null && submissionOrder === null
         ? team.members.find((member) => member.relayOrder === activeRelayOrder) ?? null
         : null;
     const progress =
@@ -375,7 +440,7 @@ export function buildLiveTeams(seeds: TeamSeed[], state: RelayState, locale: Loc
           ? "submitted"
           : state.phase === "draft" || state.phase === "complete"
             ? team.status
-            : state.phase === "reflection" || (state.phase === "paused" && state.activeRelayOrder === null)
+            : state.phase === "reflection" || state.isTransition || (state.phase === "paused" && state.activeRelayOrder === null)
               ? "ready"
               : "coding";
 

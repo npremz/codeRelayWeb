@@ -24,6 +24,18 @@ function getPhaseConfig(state: RelayState, locale: "fr" | "en") {
         bgTint: "bg-cyan/5"
       };
     case "relay":
+      if (state.isTransition) {
+        return {
+          accent: "warn" as const,
+          icon: <Clock size={24} className="text-warn" />,
+          statusLabel: locale === "en" ? "Seat change" : "Changement de place",
+          hint: locale === "en" ? "10 seconds to rotate players before the next relay" : "10 secondes pour permuter avant le relais suivant",
+          timerColor: "text-warn",
+          barColor: "bg-warn",
+          bgTint: "bg-warn/5"
+        };
+      }
+
       return {
         accent: "hot" as const,
         icon: <Zap size={24} className="text-hot" />,
@@ -34,6 +46,18 @@ function getPhaseConfig(state: RelayState, locale: "fr" | "en") {
         bgTint: "bg-hot/5"
       };
     case "paused":
+      if (state.isTransition) {
+        return {
+          accent: "warn" as const,
+          icon: <Pause size={24} className="text-warn" />,
+          statusLabel: locale === "en" ? "Paused during seat change" : "Pause pendant changement",
+          hint: locale === "en" ? "Player rotation is paused until the organizer resumes" : "La rotation des joueurs est en pause jusqu'à reprise",
+          timerColor: "text-warn",
+          barColor: "bg-warn",
+          bgTint: "bg-warn/5"
+        };
+      }
+
       return {
         accent: "warn" as const,
         icon: <Pause size={24} className="text-warn" />,

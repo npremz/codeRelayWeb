@@ -129,6 +129,7 @@ export type RelayState = {
   totalMs: number;
   currentSlice: number;
   activeRelayOrder: number | null;
+  isTransition: boolean;
   phaseLabel: string;
   progress: number;
   isRunning: boolean;
