@@ -217,16 +217,18 @@ export default function RegisterPage() {
           {/* ── Success card ──────────────────────────── */}
           {createdTeam && (
             <div className="animate-slide-up rounded-2xl border border-success/25 bg-success/5 p-6">
-              <div className="flex items-start justify-between gap-4">
-                <div>
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
                   <p className="text-xs font-semibold uppercase tracking-wider text-success">{messages.register.successEyebrow}</p>
-                  <h3 className="mt-1.5 font-display text-2xl font-bold tracking-tight text-text">{createdTeam.team.name}</h3>
-                  <p className="mt-2 text-sm text-text-muted">
-                    {messages.register.codeLabel} : <span className="font-mono text-base font-semibold text-text">{createdTeam.team.teamCode}</span>
+                  <h3 className="break-safe mt-1.5 font-display text-2xl font-bold tracking-tight text-text">
+                    {createdTeam.team.name}
+                  </h3>
+                  <p className="break-safe mt-2 text-sm text-text-muted">
+                    {messages.register.codeLabel} : <span className="code-break-safe font-mono text-base font-semibold text-text">{createdTeam.team.teamCode}</span>
                   </p>
                 </div>
                 <Link
-                  className="signal-button shrink-0"
+                  className="signal-button w-full shrink-0 sm:w-auto"
                   href={`/team/${createdTeam.team.teamCode}/manage`}
                 >
                   {messages.register.manage}
@@ -248,15 +250,17 @@ export default function RegisterPage() {
             )}
             <div className="space-y-3">
               {myTeams.map((team) => (
-                <div key={team.id} className="flex items-center justify-between gap-4 rounded-xl border border-border bg-elevated/50 px-5 py-4">
+                <div key={team.id} className="flex flex-col gap-4 rounded-xl border border-border bg-elevated/50 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="min-w-0">
-                      <p className="font-display text-base font-semibold tracking-tight text-text truncate">{team.name}</p>
-                      <p className="mt-0.5 text-sm text-text-faint">
-                        {team.teamCode} · {team.station}
+                    <p className="break-safe font-display text-base font-semibold tracking-tight text-text">
+                      {team.name}
+                    </p>
+                    <p className="break-safe mt-0.5 text-sm text-text-faint">
+                      <span className="code-break-safe">{team.teamCode}</span> · {team.station}
                     </p>
                   </div>
                   <Link
-                    className="ghost-button shrink-0"
+                    className="ghost-button w-full shrink-0 sm:w-auto"
                     href={`/team/${team.teamCode}/manage`}
                   >
                     {messages.register.open}
@@ -279,17 +283,17 @@ export default function RegisterPage() {
             <div className="space-y-4">
               {[...teams].reverse().map((team) => (
                 <article key={team.id} className="rounded-xl border border-border bg-elevated/30 p-5 transition-colors hover:border-border-hover">
-                  <div className="flex items-start justify-between gap-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div className="min-w-0">
-                      <p className="font-display text-lg font-bold tracking-tight text-text truncate">{team.name}</p>
-                      <p className="mt-1 text-sm text-text-faint">
+                      <p className="break-safe font-display text-lg font-bold tracking-tight text-text">{team.name}</p>
+                      <p className="break-safe mt-1 text-sm text-text-faint">
                         {formatCopy(messages.register.createdAtLabel, {
                           teamCode: team.teamCode,
                           date: new Date(team.createdAt).toLocaleString(getDateTimeLocale(locale))
                         })}
                       </p>
                     </div>
-                    <span className={`shrink-0 inline-flex items-center rounded-lg border px-3 py-1.5 text-xs font-semibold ${
+                    <span className={`inline-flex w-fit items-center rounded-lg border px-3 py-1.5 text-xs font-semibold ${
                       team.locked
                         ? "border-hot/20 bg-hot/10 text-hot"
                         : "border-success/20 bg-success/10 text-success"
@@ -305,7 +309,7 @@ export default function RegisterPage() {
                         <p className={`text-xs font-semibold uppercase tracking-wider ${getRelayColor(memberIndex).text}`}>
                           Relais {member.relayOrder}
                         </p>
-                        <p className="mt-1.5 text-sm font-medium text-text truncate">{member.name}</p>
+                        <p className="break-safe mt-1.5 text-sm font-medium text-text">{member.name}</p>
                       </div>
                     ))}
                   </div>

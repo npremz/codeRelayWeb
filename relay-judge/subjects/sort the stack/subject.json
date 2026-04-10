@@ -7,7 +7,7 @@
   "parameters": [
     {
       "name": "stack1",
-      "type": "stack",
+      "type": "int *",
       "description": "The first stack."
     },
     {
@@ -17,7 +17,7 @@
     },
     {
       "name": "stack2",
-      "type": "stack",
+      "type": "int *",
       "description": "The second stack."
     },
     {
